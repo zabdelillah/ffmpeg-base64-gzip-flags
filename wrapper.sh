@@ -18,3 +18,5 @@ do
 done
 
 /ffmpegwrapper.sh "$@"
+
+curl -X PUT -T "out.mov" "${AWS_UPLOAD_SIGNED_URL}"
