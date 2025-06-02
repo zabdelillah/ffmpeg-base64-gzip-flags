@@ -8,8 +8,9 @@ FULL_ARGS=( "$@" )
 for i in "$@"
 do
   if [ ${KILL+x} ]; then
-    curl "${FFMPEG_INPUT_FILE_PREFIX}/$i" -O
-    break
+  	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i"
+    curl "${FFMPEG_INPUT_FILE_PREFIX}$i" -O
+    unset KILL
   fi
   if [ "$i" == "-i" ]; then
     KILL=1
