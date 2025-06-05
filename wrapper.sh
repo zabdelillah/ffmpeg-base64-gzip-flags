@@ -19,4 +19,4 @@ done
 
 /ffmpegwrapper.sh "$@"
 
-curl -X PUT -T "out.mov" "${AWS_UPLOAD_SIGNED_URL}"
+curl -T out.mov $(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.output')
