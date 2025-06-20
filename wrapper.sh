@@ -4,6 +4,11 @@ FULL_ARGS=$( echo "$@" | base64 -d | gunzip )
 set -- $FULL_ARGS
 FULL_ARGS=( "$@" )
 
+for font in ${FONT_URLS//,/ }
+do
+  curl $font -O
+done
+
 # look for input file value
 for i in "$@"
 do
