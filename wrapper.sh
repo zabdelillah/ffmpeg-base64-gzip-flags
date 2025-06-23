@@ -6,6 +6,7 @@ FULL_ARGS=( "$@" )
 
 for font in ${FONT_URLS//,/ }
 do
+  echo "Download: $font to $(pwd)"
   curl $font -O
 done
 
@@ -13,7 +14,7 @@ done
 for i in "$@"
 do
   if [ ${KILL+x} ]; then
-  	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i"
+  	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i to $(pwd)"
     curl "${FFMPEG_INPUT_FILE_PREFIX}$i" -O
     unset KILL
   fi
@@ -21,6 +22,8 @@ do
     KILL=1
   fi
 done
+
+ls -lah
 
 /ffmpegwrapper.sh "$@"
 
