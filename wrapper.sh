@@ -4,6 +4,8 @@ FULL_ARGS=$( echo "$@" | base64 -d | gunzip )
 set -- $FULL_ARGS
 FULL_ARGS=( "$@" )
 
+echo "User: $(id)"
+
 for font in ${FONT_URLS//,/ }
 do
   echo "Download: $font to $(pwd)"
