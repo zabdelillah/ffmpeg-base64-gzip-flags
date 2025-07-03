@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # FULL_ARGS=$( echo "$@" | base64 -d | gunzip )
-$(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.flags' | base64 -d | gunzip)
+FULL_ARGS=$(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.flags' | base64 -d | gunzip)
 set -- $FULL_ARGS
 FULL_ARGS=( "$@" )
 
