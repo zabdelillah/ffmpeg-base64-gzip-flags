@@ -28,6 +28,7 @@ done
 
 ls -lah
 
-/usr/local/bin/ffmpeg "$@"
+Xvfb :100 -screen 0 1280x1024x16 &
+DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
 
 curl -T out.mov $(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.output')
