@@ -28,6 +28,6 @@ done
 
 ls -lah
 
-/ffmpegwrapper.sh "$@"
+/usr/local/bin/ffmpeg "$@"
 
 curl -T out.mov $(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.output')
