@@ -18,15 +18,25 @@ for i in "$@"
 do
   if [ ${KILL+x} ]; then
   	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i to $(pwd)"
-    curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
-    echo "Preconverting Asset"
-    ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 -t 5 "$i.mp4"
-    mv -v $i.mp4 $i
+    if [[ "$i" == *.jpg ]]; then
+      curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
+      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 -t 5 "$i.mp4" &
+    else
+      curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
+    fi
     unset KILL
   fi
   if [ "$i" == "-i" ]; then
     KILL=1
   fi
+done
+
+wait
+
+for clip in "*.mp4";
+do
+  base="${clip%.mp4}"
+  mv -v $clip $base
 done
 
 ls -lah
