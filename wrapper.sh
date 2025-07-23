@@ -33,7 +33,7 @@ done
 
 wait
 
-for clip in "*.mp4";
+for clip in *.mp4;
 do
   base="${clip%.mp4}"
   mv -v $clip $base
