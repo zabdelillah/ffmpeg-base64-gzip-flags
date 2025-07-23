@@ -26,7 +26,7 @@ for file in gl-transitions/transitions/*.glsl; do
       # sed -i.bak "s/\b$var\b/$val/g" "$file"
 
       # # Optionally remove the .bak file if you don't need backup
-      # rm "${file}.bak"
+      rm "${file}.bak"
     fi
   fi
 done

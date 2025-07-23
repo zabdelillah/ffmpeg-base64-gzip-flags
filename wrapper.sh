@@ -18,7 +18,8 @@ for i in "$@"
 do
   if [ ${KILL+x} ]; then
   	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i to $(pwd)"
-    curl "${FFMPEG_INPUT_FILE_PREFIX}$i" -O
+    curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
+    ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 "$i" 
     unset KILL
   fi
   if [ "$i" == "-i" ]; then
