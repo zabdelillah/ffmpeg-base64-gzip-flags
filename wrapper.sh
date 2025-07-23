@@ -19,7 +19,9 @@ do
   if [ ${KILL+x} ]; then
   	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i to $(pwd)"
     curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
-    ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 "$i" 
+    echo "Preconverting Asset"
+    ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 -t 5 "$i.mp4"
+    mv -v $i.mp4 $i
     unset KILL
   fi
   if [ "$i" == "-i" ]; then
