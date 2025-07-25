@@ -18,7 +18,7 @@ for i in "$@"
 do
   if [ ${KILL+x} ]; then
   	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i to $(pwd)"
-    if [[ "$i" == *.jpg ]]; then
+    if [[ ! "$i" == *.mp3 ]]; then
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
       ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 -t 5 "$i.mp4" &
     else
