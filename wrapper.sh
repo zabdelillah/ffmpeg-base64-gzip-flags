@@ -48,7 +48,7 @@ FFMPEG_STRING=$(echo "$BASE_FULL_ARGS" | grep -oP '(?<=-filter_complex )\[[^\]]+
 FFMPEG_AUDIOS="${FFMPEG_STRING%\[aout];*}[aout]"
 FFMPEG_CLIPS="${FFMPEG_STRING##*\[aout];}" 
 FFMPEG_PREMIX="${FFMPEG_CLIPS%;*}"
-FFMPEG_POSTMIX=$(echo "${FFMPEG_CLIPS##*;}" | sed -E 's/\[out*\]//' | sed -E 's/\[out[0-9]+\]//')
+FFMPEG_POSTMIX=$(echo "${FFMPEG_CLIPS##*;}" | sed -E 's/\[out*\]//' | sed -E 's/\[out[0-9]+\]//' | sed -E 's/\[glout[0-9]+\]//')
 TOTAL_DURATION=$(echo "$BASE_FULL_ARGS" | grep -oP -- "-t [0-9\.]+")
 
 ffmpeg_cmd=${BASE_FULL_ARGS}
