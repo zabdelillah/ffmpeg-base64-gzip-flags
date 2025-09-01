@@ -42,6 +42,74 @@ done
 ls -lah
 
 Xvfb :100 -screen 0 1280x1024x16 &
-DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
+
+FFMPEG_STRING=$(echo "$FULL_ARGS" | grep -oP '(?<=-filter_complex )\[[^\]]+\][^ ]*')
+
+FFMPEG_AUDIOS="${FFMPEG_STRING%\[aout];*}[aout]"
+FFMPEG_CLIPS="${FFMPEG_STRING##*\[aout];}" 
+FFMPEG_PREMIX="${FFMPEG_CLIPS%;*}"
+FFMPEG_POSTMIX=$(echo "${FFMPEG_CLIPS##*;}" | sed -E 's/\[out*\]//' | sed -E 's/\[out[0-9]+\]//')
+
+ffmpeg_cmd=${FULL_ARGS}
+file_inputs=()
+echo $FULL_ARGS
+while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
+  file_inputs+=("${BASH_REMATCH[1]}")
+  # Remove the first matched "-i input" part to search for the next
+  ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
+done
+
+for input in "${file_inputs[@]}"; do
+  echo "Input: $input"
+done
+
+# FFMPEG_SOURCE_EFFECTS="${FFMPEG_PREMIX%;\[0\:v]\[ov1]}"
+FFMPEG_SOURCE_EFFECTS="${FFMPEG_PREMIX%;\[0:v]\[ov1]overlay*}"
+IFS=';' read -ra FFMPEG_CLIP_SEGMENTS <<< "$FFMPEG_SOURCE_EFFECTS"
+# BEFORE="${FFMPEG_STRING%\[out[\d]+]}"
+INDEX=0
+PIPES=()
+for element in "${FFMPEG_CLIP_SEGMENTS[@]}"
+do
+  mkfifo /tmp/ffmpeg_ov${INDEX}
+  PIPES+=(/tmp/ffmpeg_ov${INDEX})
+  filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
+    DISPLAY=:100 ffmpeg -loop 1 -i "${file_inputs[$((INDEX + 1))]}" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
+    # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
+    ((INDEX++))
+done
+echo
+
+FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}" | sed -E 's/\[ov([0-9]+)\]/[\1:v]/g' | sed -E 's/\[out[0-9]+\]$/[out]/' | sed -E 's/\[glout[0-9]+\]$/[out]/')
+PIPES=( "${PIPES[@]/#/-video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i }" )
+mkfifo /tmp/ffmpeg_base
+DISPLAY=:100 ffmpeg -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_base -r 60 -y &# &> /dev/null &
+EXTRA_MAPS=""
+AUDIOS=""
+if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
+  EXTRA_MAPS=" -map [out] -map [aout]"
+  AUDIO_FILTERS=($(grep -oP '\[\d+:a\]' <<< "$FFMPEG_AUDIOS"))
+  for AIN in "${AUDIO_FILTERS[@]}"; do
+    INPUT_INDEX=${AIN#[}
+      INPUT_INDEX=${INPUT_INDEX%:*}
+      NEW_INDEX=$((INPUT_INDEX - INDEX))
+      NEW_AIN="[$NEW_INDEX:a]"
+      NEW_AIN_OUT="[a${NEW_INDEX}]"
+
+      SED_ORIGINAL_INPUT=$(printf '%s\n' "$AIN" | sed -e 's/[]\/$*.^[]/\\&/g')
+      SED_NEW_INPUT=$(printf '%s\n' "$NEW_AIN" | sed -e 's/[&/\]/\\&/g')
+      SED_ORIGINAL_OUTPUT=$(printf '%s\n' "[a${INPUT_INDEX}]" | sed -e 's/[]\/$*.^[]/\\&/g')
+      SED_NEW_OUTPUT=$(printf '%s\n' "$NEW_AIN_OUT" | sed -e 's/[&/\]/\\&/g')
+      FFMPEG_AUDIOS=$(sed "s/$SED_ORIGINAL_INPUT/$SED_NEW_INPUT/g" <<< "$FFMPEG_AUDIOS")
+      FFMPEG_AUDIOS=$(sed "s/$SED_ORIGINAL_OUTPUT/$SED_NEW_OUTPUT/g" <<< "$FFMPEG_AUDIOS")
+      AUDIOS+=" -i ${file_inputs[$(( INPUT_INDEX ))]}"
+  done
+
+  FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
+fi
+DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 ~/multiout.mp4 -y
+# fi
+
+#DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
 
 curl -T out.mov $(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.output')
