@@ -21,6 +21,7 @@ do
     if [[ ! "$i" == *.mp3 ]]; then
       mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
+      echo "[INITCONVERT] command: ffmpeg -nostdin -progress /dev/stderr -i /tmp/$i -filter_complex 'tpad=stop=-1:stop_mode=clone,format=yuv420p' -f h264 -r 60 -t 5 /tmp/$i.mp4 -y 2> >(sed 's/^/[INITCONVERT] /') &"
       ffmpeg -nostdin -progress /dev/stderr -i "/tmp/$i" -filter_complex "tpad=stop=-1:stop_mode=clone,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y 2> >(sed 's/^/[INITCONVERT] /') &
     else
       curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
@@ -100,6 +101,7 @@ do
   mkfifo /tmp/ffmpeg_ov${INDEX}
   PIPES+=(/tmp/ffmpeg_ov${INDEX})
   filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
+    echo "[filters${INDEX}] command: DISPLAY=:100 ffmpeg -nostdin -progress /dev/stderr -f h264 -i '/tmp/${file_inputs[$((INDEX + 1))]}.mp4' -filter_complex '${filter_complex},format=yuv420p' -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y 2> >(sed 's/^/[filters${INDEX}] /')"
     DISPLAY=:100 ffmpeg -nostdin -progress /dev/stderr -f h264 -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y 2> >(sed "s/^/[filters${INDEX}] /") &
     # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
     ((INDEX++))
@@ -109,6 +111,7 @@ echo
 FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}" | sed -E 's/\[ov([0-9]+)\]/[\1:v]/g' | sed -E 's/\[out[0-9]+\]$/[out]/' | sed -E 's/\[glout[0-9]+\]$/[out]/')
 PIPES=( "${PIPES[@]/#/-video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i }" )
 mkfifo /tmp/ffmpeg_base
+echo "[overlays] command: DISPLAY=:100 ffmpeg -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex '$FFMPEG_OVERLAYS' -map '[out]' -t 60 -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_base -r 60 -y 2> >(sed 's/^/[overlays] /'') &"
 DISPLAY=:100 ffmpeg -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_base -r 60 -y 2> >(sed "s/^/[overlays] /") &
 EXTRA_MAPS=""
 AUDIOS=""
@@ -133,6 +136,7 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
 
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
+echo "[final] command: DISPLAY=:100 ffmpeg -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
 DISPLAY=:100 ffmpeg -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -r 60 out.mov -y 2> >(sed "s/^/[final] /")
 # fi
 
