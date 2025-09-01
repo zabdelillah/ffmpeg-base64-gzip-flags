@@ -99,7 +99,7 @@ do
   mkfifo /tmp/ffmpeg_ov${INDEX}
   PIPES+=(/tmp/ffmpeg_ov${INDEX})
   filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
-    DISPLAY=:100 ffmpeg -f h264 -pix_fmt yuv420p -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
+    DISPLAY=:100 ffmpeg -f h264 -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
     # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
     ((INDEX++))
 done
