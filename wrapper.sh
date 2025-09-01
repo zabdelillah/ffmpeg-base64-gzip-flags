@@ -21,7 +21,7 @@ do
     if [[ ! "$i" == *.mp3 ]]; then
       mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
-      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -filter_complex "scale=1080x1910,format=yuv420p" -f h264 "/tmp/$i.mp4" -y &
+      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -filter_complex "scale=1080x1910,format=yuv420p" -f h264 -t 5 "/tmp/$i.mp4" -y &
     else
       curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
     fi
@@ -132,7 +132,7 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
 
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
-DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 ~/out.mov -y
+DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 out.mov -y
 # fi
 
 #DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
