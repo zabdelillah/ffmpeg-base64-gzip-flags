@@ -44,7 +44,6 @@ ls -lah
 Xvfb :100 -screen 0 1280x1024x16 &
 
 FFMPEG_STRING=$(echo "$FULL_ARGS" | grep -oP '(?<=-filter_complex )\[[^\]]+\][^ ]*')
-
 FFMPEG_AUDIOS="${FFMPEG_STRING%\[aout];*}[aout]"
 FFMPEG_CLIPS="${FFMPEG_STRING##*\[aout];}" 
 FFMPEG_PREMIX="${FFMPEG_CLIPS%;*}"
@@ -59,12 +58,38 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
 done
 
-for input in "${file_inputs[@]}"; do
-  echo "Input: $input"
-done
+if [[ -z "$FFMPEG_STRING" ]]; then
+  echo $FULL_ARGS
+  echo "Unable to extract ffmpeg string. Exiting.."
+  exit 1
+fi
+
+if [[ -z "$FFMPEG_CLIPS" ]]; then
+  echo $FFMPEG_STRING
+  echo "Unable to extract clips. Exiting.."
+  exit 1
+fi
+
+
+if [[ -z "$FFMPEG_PREMIX" ]]; then
+  echo $FFMPEG_CLIPS
+  echo "Unable to extract premix. Exiting.."
+  exit 1
+fi
+
+FFMPEG_SOURCE_EFFECTS="${FFMPEG_PREMIX%;\[0:v]\[ov1]overlay*}"
+if [[ -z "$FFMPEG_SOURCE_EFFECTS" ]]; then
+  FFMPEG_SOURCE_EFFECTS="${FFMPEG_PREMIX%;\[1:v]*}"
+fi
+if [[ -z "$FFMPEG_SOURCE_EFFECTS" ]]; then
+  echo $FFMPEG_PREMIX
+  echo "Unable to extract source effects. Exiting.."
+  exit 1
+fi
 
 # FFMPEG_SOURCE_EFFECTS="${FFMPEG_PREMIX%;\[0\:v]\[ov1]}"
 FFMPEG_SOURCE_EFFECTS="${FFMPEG_PREMIX%;\[0:v]\[ov1]overlay*}"
+
 IFS=';' read -ra FFMPEG_CLIP_SEGMENTS <<< "$FFMPEG_SOURCE_EFFECTS"
 # BEFORE="${FFMPEG_STRING%\[out[\d]+]}"
 INDEX=0
@@ -74,7 +99,7 @@ do
   mkfifo /tmp/ffmpeg_ov${INDEX}
   PIPES+=(/tmp/ffmpeg_ov${INDEX})
   filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
-    DISPLAY=:100 ffmpeg -loop 1 -i "${file_inputs[$((INDEX + 1))]}" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
+    echo DISPLAY=:100 ffmpeg -loop 1 -i "${file_inputs[$((INDEX + 1))]}" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
     # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
     ((INDEX++))
 done
@@ -83,7 +108,7 @@ echo
 FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}" | sed -E 's/\[ov([0-9]+)\]/[\1:v]/g' | sed -E 's/\[out[0-9]+\]$/[out]/' | sed -E 's/\[glout[0-9]+\]$/[out]/')
 PIPES=( "${PIPES[@]/#/-video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i }" )
 mkfifo /tmp/ffmpeg_base
-DISPLAY=:100 ffmpeg -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_base -r 60 -y &# &> /dev/null &
+echo DISPLAY=:100 ffmpeg -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_base -r 60 -y &# &> /dev/null &
 EXTRA_MAPS=""
 AUDIOS=""
 if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
@@ -107,7 +132,7 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
 
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
-DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 ~/multiout.mp4 -y
+echo DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 ~/multiout.mp4 -y
 # fi
 
 #DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
