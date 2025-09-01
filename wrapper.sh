@@ -19,6 +19,7 @@ do
   if [ ${KILL+x} ]; then
   	echo "Download: ${FFMPEG_INPUT_FILE_PREFIX}$i to $(pwd)"
     if [[ ! "$i" == *.mp3 ]]; then
+      mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
       ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 -t 5 "$i.mp4" &
     else
@@ -98,7 +99,7 @@ do
   mkfifo /tmp/ffmpeg_ov${INDEX}
   PIPES+=(/tmp/ffmpeg_ov${INDEX})
   filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
-    DISPLAY=:100 ffmpeg -loop 1 -i "${file_inputs[$((INDEX + 1))]}" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
+    DISPLAY=:100 ffmpeg -i "${file_inputs[$((INDEX + 1))]}" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
     # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
     ((INDEX++))
 done
