@@ -21,7 +21,7 @@ do
     if [[ ! "$i" == *.mp3 ]]; then
       mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
-      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -filter_complex "scale=1080x1910,format=yuv420p" -f h264 -t 5 "/tmp/$i.mp4" -y &
+      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -filter_complex "scale=1080x1910,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y &
     else
       curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
     fi
@@ -49,6 +49,7 @@ FFMPEG_AUDIOS="${FFMPEG_STRING%\[aout];*}[aout]"
 FFMPEG_CLIPS="${FFMPEG_STRING##*\[aout];}" 
 FFMPEG_PREMIX="${FFMPEG_CLIPS%;*}"
 FFMPEG_POSTMIX=$(echo "${FFMPEG_CLIPS##*;}" | sed -E 's/\[out*\]//' | sed -E 's/\[out[0-9]+\]//')
+TOTAL_DURATION=$(echo "$BASE_FULL_ARGS" | grep -oP -- "-t [0-9\.]+")
 
 ffmpeg_cmd=${BASE_FULL_ARGS}
 file_inputs=()
@@ -106,7 +107,7 @@ done
 echo
 
 FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}" | sed -E 's/\[ov([0-9]+)\]/[\1:v]/g' | sed -E 's/\[out[0-9]+\]$/[out]/' | sed -E 's/\[glout[0-9]+\]$/[out]/')
-PIPES=( "${PIPES[@]/#/-video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i }" )
+PIPES=( "${PIPES[@]/#/-video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i }" )
 mkfifo /tmp/ffmpeg_base
 DISPLAY=:100 ffmpeg -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_base -r 60 -y &# &> /dev/null &
 EXTRA_MAPS=""
@@ -132,7 +133,7 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
 
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
-DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 out.mov -y
+DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -r 60 out.mov -y
 # fi
 
 #DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
