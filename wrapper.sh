@@ -21,7 +21,7 @@ do
     if [[ ! "$i" == *.mp3 ]]; then
       mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
-      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -c:v libx264 -t 5 "$i.mp4" &
+      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -filter_complex "scale=1080x1910,format=yuv420p" -f h264 "/tmp/$i.mp4" &
     else
       curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
     fi
@@ -32,15 +32,15 @@ do
   fi
 done
 
-wait
+# wait
 
-for clip in *.mp4;
-do
-  base="${clip%.mp4}"
-  mv -v $clip $base
-done
+# for clip in *.mp4;
+# do
+#   base="${clip%.mp4}"
+#   mv -v $clip $base
+# done
 
-ls -lah
+# ls -lah
 
 Xvfb :100 -screen 0 1280x1024x16 &
 
@@ -99,7 +99,7 @@ do
   mkfifo /tmp/ffmpeg_ov${INDEX}
   PIPES+=(/tmp/ffmpeg_ov${INDEX})
   filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
-    DISPLAY=:100 ffmpeg -i "${file_inputs[$((INDEX + 1))]}" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
+    DISPLAY=:100 ffmpeg -f h264 -pix_fmt yuv420p -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p /tmp/ffmpeg_ov${INDEX} -y &#&> /dev/null &
     # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
     ((INDEX++))
 done
