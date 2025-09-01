@@ -131,7 +131,7 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
 
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
-DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 ~/multiout.mp4 -y
+DISPLAY=:100 ffmpeg -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS -t 60 -c:v libx264 -r 60 ~/out.mov -y
 # fi
 
 #DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
