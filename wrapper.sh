@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # FULL_ARGS=$( echo "$@" | base64 -d | gunzip )
-FULL_ARGS=$(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.flags' | base64 -d | gunzip)
-set -- $FULL_ARGS
+BASE_FULL_ARGS=$(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.flags' | base64 -d | gunzip)
+set -- $BASE_FULL_ARGS
 FULL_ARGS=( "$@" )
 
 echo "User: $(id)"
@@ -43,15 +43,14 @@ ls -lah
 
 Xvfb :100 -screen 0 1280x1024x16 &
 
-FFMPEG_STRING=$(echo "$FULL_ARGS" | grep -oP '(?<=-filter_complex )\[[^\]]+\][^ ]*')
+FFMPEG_STRING=$(echo "$BASE_FULL_ARGS" | grep -oP '(?<=-filter_complex )\[[^\]]+\][^ ]*')
 FFMPEG_AUDIOS="${FFMPEG_STRING%\[aout];*}[aout]"
 FFMPEG_CLIPS="${FFMPEG_STRING##*\[aout];}" 
 FFMPEG_PREMIX="${FFMPEG_CLIPS%;*}"
 FFMPEG_POSTMIX=$(echo "${FFMPEG_CLIPS##*;}" | sed -E 's/\[out*\]//' | sed -E 's/\[out[0-9]+\]//')
 
-ffmpeg_cmd=${FULL_ARGS}
+ffmpeg_cmd=${BASE_FULL_ARGS}
 file_inputs=()
-echo $FULL_ARGS
 while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   file_inputs+=("${BASH_REMATCH[1]}")
   # Remove the first matched "-i input" part to search for the next
@@ -59,7 +58,7 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
 done
 
 if [[ -z "$FFMPEG_STRING" ]]; then
-  echo $FULL_ARGS
+  echo $BASE_FULL_ARGS
   echo "Unable to extract ffmpeg string. Exiting.."
   exit 1
 fi
