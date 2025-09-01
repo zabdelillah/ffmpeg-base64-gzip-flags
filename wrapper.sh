@@ -21,7 +21,7 @@ do
     if [[ ! "$i" == *.mp3 ]]; then
       mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
-      ffmpeg -framerate 60 -loop 1 -i "/tmp/$i" -filter_complex "scale=1080x1910,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y &
+      ffmpeg -i "/tmp/$i" -filter_complex "tpad=stop=-1:stop_mode=clone,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y &
     else
       curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
     fi
