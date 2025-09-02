@@ -1,4 +1,4 @@
-FROM ghcr.io/zabdelillah/ffmpeg:gl-transitions
+FROM ghcr.io/zabdelillah/ffmpeg:gl-transitions-gpu
 COPY "wrapper.sh" "/wrapper.sh"
 COPY "ffmpegwrapper.sh" "/ffmpegwrapper.sh"
 COPY "hardcode.sh" "/hardcode.sh"
