@@ -136,7 +136,7 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
 
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
-echo "[final] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i /tmp/ffmpeg_base $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
+echo "[final] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i /tmp/ffmpeg_base $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v h264_nvenc -preset fast -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
 ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -r 60 out.mov -y 2> >(sed "s/^/[final] /")
 # fi
 
