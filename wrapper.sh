@@ -22,7 +22,7 @@ do
       mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
       echo "[INITCONVERT] command: ffmpeg -nostdin -progress /dev/stderr -framerate 60 -i /tmp/$i -filter_complex 'tpad=stop=-1:stop_mode=clone,format=yuv420p' -f h264 -r 60 -t 5 /tmp/$i.mp4 -y 2> >(sed 's/^/[INITCONVERT] /') &"
-      ffmpeg -nostdin -progress /dev/stderr -framerate 60 -i "/tmp/$i" -filter_complex "zoompan=z=1:d=300:s=1080x1910:fps=60,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y 2> >(sed 's/^/[INITCONVERT] /') &
+      ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i "/tmp/$i" -filter_complex "zoompan=z=1:d=300:fps=60,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y 2> >(sed 's/^/[INITCONVERT] /') &
     else
       curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
     fi
@@ -137,7 +137,7 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
 echo "[final] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i /tmp/ffmpeg_base $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v h264_nvenc -preset fast -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
-ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -r 60 out.mov -y 2> >(sed "s/^/[final] /")
+ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -video_size 1080x1910 -f rawvideo -pix_fmt yuv420p -framerate 60 -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v h264_nvenc -r 60 out.mov -y 2> >(sed "s/^/[final] /")
 # fi
 
 #DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
