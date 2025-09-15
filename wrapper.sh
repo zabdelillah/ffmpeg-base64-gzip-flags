@@ -22,7 +22,7 @@ do
       mkfifo /tmp/$i.mp4
       curl -O --output-dir /tmp "${FFMPEG_INPUT_FILE_PREFIX}$i"
       echo "[INITCONVERT] command: ffmpeg -nostdin -progress /dev/stderr -framerate 60 -i /tmp/$i -filter_complex 'tpad=stop=-1:stop_mode=clone,format=yuv420p' -f h264 -r 60 -t 5 /tmp/$i.mp4 -y 2> >(sed 's/^/[INITCONVERT] /') &"
-      ffmpeg -nostdin -progress /dev/stderr -framerate 60 -i "/tmp/$i" -filter_complex "tpad=stop=-1:stop_mode=clone,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y 2> >(sed 's/^/[INITCONVERT] /') &
+      ffmpeg -nostdin -progress /dev/stderr -framerate 60 -i "/tmp/$i" -filter_complex "zoompan=z=1:d=300:fps=60,format=yuv420p" -f h264 -r 60 -t 5 "/tmp/$i.mp4" -y 2> >(sed 's/^/[INITCONVERT] /') &
     else
       curl -O "${FFMPEG_INPUT_FILE_PREFIX}$i"
     fi
