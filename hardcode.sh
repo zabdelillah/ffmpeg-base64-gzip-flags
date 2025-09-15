@@ -5,16 +5,27 @@ for file in transitions/*.glsl; do
   if [ -f "$file" ]; then
     # Check if file contains a line matching the pattern
     # Pattern: #define
-    # if grep -Eq '^#define.*\s.*[0-9]+$' "$file"; then
-    #   matched_line=$(grep -E '^#define.*[0-9\.]+$' "$file" | head -n1)
-    #   var=$(echo "$matched_line" | grep -Eo '^#define\s[A-z]+' | awk '{print $2}')
-    #   val=$(echo "$matched_line" | grep -Eo '[0-9\.]+$')
+    if grep -Eq '^#define\s+[A-Za-z_][A-Za-z0-9_]*\s+[0-9]*\.?[0-9]+' "$file"; then
+      matched_line=$(grep -E '^#define\s+[A-Za-z_][A-Za-z0-9_]*\s+[0-9]*\.?[0-9]+' "$file" | head -n1)
 
-    #   sed -i.bak "\|${matched_line}|d" "$file"
-    #   sed -i.bak "s/${var}/\(${val}\)/g" "$file"
+      # Extract variable name (macro)
+      var=$(echo "$matched_line" | grep -Eo '^#define\s+[A-Za-z_][A-Za-z0-9_]*' | awk '{print $2}')
 
-    #   echo "File: $file, Variable: $var, Value: $val, DEF"
-    # fi
+      # Extract numeric value as is (full decimal), stopping before any comment. Avoid grep -Eo which cuts early.
+      val=$(echo "$matched_line" | sed -E 's/^#define\s+[A-Za-z_][A-Za-z0-9_]*\s+([0-9]+\.[0-9]+).*/\1/')
+
+      # Escape slashes in matched line for safe sed deletion
+      escaped_line=$(printf '%s\n' "$matched_line" | sed 's/[\\/&]/\\&/g')
+
+      # Delete the exact matched #define line
+      sed -i.bak "\|^#define.*$|d" "$file"
+
+      # Replace all exact word matches of variable name with numeric value (no parentheses)
+      sed -i.bak "s/\b${var}\b/${val}/g" "$file"
+
+      echo "File: $file, Variable: $var, Value: $val, DEF"
+    fi
+
     # Pattern: ^uniform <type> <var>; // = <value>
     if grep -Eq '^uniform.*//\s.*[0-9]+$' "$file"; then
       # Extract the line
