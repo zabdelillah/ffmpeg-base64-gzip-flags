@@ -34,8 +34,13 @@ for file in gl-transitions/transitions/*.glsl; do
 
         # Extract variable and value using sed or bash param expansion
         # The line looks like: uniform float size; // = 0.2
+        type=$(echo "$matched_line" | grep -Eo '^uniform\s+[a-zA-Z]+' | awk '{print $2}')
         var=$(echo "$matched_line" | grep -Eo '^uniform\s+[a-zA-Z]+\s+[a-zA-Z_][a-zA-Z0-9_]*' | awk '{print $3}')
         val=$(echo "$matched_line" | grep -Eo '[0-9\.]+$')
+
+        if [[ "$type" == "float" && ! $val =~ \. ]]; then
+          val="${val}.0"
+        fi
 
         echo "File: $file, Variable: $var, Value: $val"
 
