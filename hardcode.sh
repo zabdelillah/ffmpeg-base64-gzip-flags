@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Loop through all files (modify pattern if needed)
-for file in transitions/*.glsl; do
+for file in gl-transitions/transitions/*.glsl; do
   if [ -f "$file" ]; then
     # Check if file contains a line matching the pattern
     # Pattern: #define
