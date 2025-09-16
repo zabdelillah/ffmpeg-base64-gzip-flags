@@ -41,7 +41,7 @@ for file in gl-transitions/transitions/*.glsl; do
 
         # # Remove the line from the file
         sed -i.bak "\|${matched_line}|d" "$file"
-        sed -i.bak "s/${var}/\(${val}\)/g" "$file"
+        sed -i.bak "s/${var}/${val}/g" "$file"
         # sed -i.bak "/^uniform\s\+\S\+\s\+$var;\s*\/\/\s*=\s*$val$/d" "$file"
 
         # # Replace all occurrences of the variable with the value
