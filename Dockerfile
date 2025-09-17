@@ -6,6 +6,6 @@ RUN chmod +x /*.sh; dnf install -y jq xorg-x11-server-Xvfb git; \
 	git clone https://github.com/gl-transitions/gl-transitions.git; \
 	bash /hardcode.sh; \
 	mv gl-transitions/transitions/* ./; \
-	apt install -y jq curl;
+	apt install -y jq curl bc;
 ENTRYPOINT ["/wrapper.sh"]
 
