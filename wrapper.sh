@@ -124,8 +124,52 @@ FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}"
 PIPES=( "${PIPES[@]/#/-i }" )
 # mkfifo /tmp/ffmpeg_base
 echo "[overlays] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex '$FFMPEG_OVERLAYS' -map '[out]' -t 60 -c:v libx264 /tmp/ffmpeg_base.mp4 -r 60 -y 2> >(sed 's/^/[overlays] /'') &"
-ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -c:v libx264 -f mp4 /tmp/ffmpeg_base.mp4 -r 60 -y 2> >(sed "s/^/[overlays] /") &
-wait
+FFMPEG_OVERLAYS_CMD="ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -c:v libx264 -f mp4 /tmp/ffmpeg_base.mp4 -r 60 -y"
+## BEGIN OVERLAY / GLTRANSITION DISTRIBUTIONS
+#!/bin/bash
+
+ffmpeg_cmd=${FFMPEG_OVERLAYS_CMD}
+file_inputs=()
+while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
+  file_inputs+=("${BASH_REMATCH[1]}")
+  ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
+done
+
+# Extract gltransition lines
+echo ""
+echo "GLTRANSITION lines:"
+prevSum="0.0"
+echo "$FFMPEG_OVERLAYS_CMD" | ggrep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
+    # echo "$line"
+    NESTED_FILTERS=$(echo $line | ggrep -oP 'gltransition\=[A-Za-z\=\:0-9\.\,]+')
+    INDEX=$(echo $line | ggrep -oP '[0-9]+' | tail -n 1)
+    NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
+    # Extract offset and duration using parameter expansion and grep/sed
+    offset=$(echo "$line" | ggrep -oP 'offset=\K[0-9.]+')
+    duration=$(echo "$line" | ggrep -oP 'duration=\K[0-9.]+')
+
+    # Calculate sum (offset + duration)
+    sum=$(echo "$offset + $duration" | bc)
+    # offset=$(($prevSum - $sum))
+    offset=$(awk -v prevSum="$prevSum" -v sum="$sum" 'BEGIN {print sum - prevSum}')
+    prevSum=$sum
+    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex '${NEW_FILTERS}' -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4
+done
+
+CONCAT_INPUTS=""
+CONCAT_VFINS=""
+
+INDEX=0
+for f in "${file_inputs[@]:1}"; do
+  CONCAT_INPUTS+=" -i ${f}.overlay.mp4"
+  CONCAT_VFINS+="[${INDEX}:v]"
+  ((INDEX++))
+done
+
+ffmpeg ${CONCAT_INPUTS} -filter_complex '${CONCAT_VFINS}concat=n=${INDEX}:v=1[out]' -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4
+## END OVERLAY / GLTRANSITION DISTRIBUTIONS
+
+# wait
 echo "[overlays] concatenation complete"
 
 EXTRA_MAPS=""
