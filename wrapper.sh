@@ -139,21 +139,22 @@ done
 echo ""
 echo "GLTRANSITION lines:"
 prevSum="0.0"
-echo "$FFMPEG_OVERLAYS_CMD" | ggrep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
+echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
     # echo "$line"
-    NESTED_FILTERS=$(echo $line | ggrep -oP 'gltransition\=[A-Za-z\=\:0-9\.\,]+')
-    INDEX=$(echo $line | ggrep -oP '[0-9]+' | tail -n 1)
+    NESTED_FILTERS=$(echo $line | grep -oP 'gltransition\=[A-Za-z\=\:0-9\.\,]+')
+    INDEX=$(echo $line | grep -oP '[0-9]+' | tail -n 1)
     NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
     # Extract offset and duration using parameter expansion and grep/sed
-    offset=$(echo "$line" | ggrep -oP 'offset=\K[0-9.]+')
-    duration=$(echo "$line" | ggrep -oP 'duration=\K[0-9.]+')
+    offset=$(echo "$line" | grep -oP 'offset=\K[0-9.]+')
+    duration=$(echo "$line" | grep -oP 'duration=\K[0-9.]+')
 
     # Calculate sum (offset + duration)
     sum=$(echo "$offset + $duration" | bc)
     # offset=$(($prevSum - $sum))
     offset=$(awk -v prevSum="$prevSum" -v sum="$sum" 'BEGIN {print sum - prevSum}')
     prevSum=$sum
-    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex '${NEW_FILTERS}' -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4
+    echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4"
+    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4
 done
 
 CONCAT_INPUTS=""
@@ -166,7 +167,8 @@ for f in "${file_inputs[@]:1}"; do
   ((INDEX++))
 done
 
-ffmpeg ${CONCAT_INPUTS} -filter_complex '${CONCAT_VFINS}concat=n=${INDEX}:v=1[out]' -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4
+echo "[CONCAT] command: ffmpeg ${CONCAT_INPUTS} -filter_complex ${CONCAT_VFINS}concat=n=${INDEX}:v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
+ffmpeg ${CONCAT_INPUTS} -filter_complex "${CONCAT_VFINS}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
 
 # wait
