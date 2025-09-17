@@ -143,7 +143,7 @@ echo $(echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Z
 prevSum="0.0"
 echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
     # echo "$line"
-    NESTED_FILTERS=$(echo $line | grep -oP 'gltransition\=[A-Za-z\=\:0-9\.\,]+')
+    NESTED_FILTERS=$(echo $line | grep -oP 'transition\=[A-Za-z\=\:0-9\.\,]+')
     INDEX=$(echo $line | grep -oP '[0-9]+' | tail -n 1)
     echo "[OVERLAY${INDEX}] line: $line"
     NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
@@ -161,8 +161,8 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     gl_outputs+=("${file_inputs[$INDEX]}.overlay.mp4")
 done
 
-CONCAT_INPUTS=""
-CONCAT_VFINS=""
+CONCAT_INPUTS=()
+CONCAT_VFINS=()
 
 INDEX=0
 for f in "${gl_outputs[@]}"; do
