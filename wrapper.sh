@@ -111,8 +111,8 @@ do
   # mkfifo /tmp/ffmpeg_ov${INDEX}
   PIPES+=(/tmp/ffmpeg_ov${INDEX}.mp4)
   filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
-    echo "[filters${INDEX}] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i '/tmp/${file_inputs[$((INDEX + 1))]}.mp4' -filter_complex 'fps=60,${filter_complex},format=yuv420p' -c:v libx264 -r 60 /tmp/ffmpeg_ov${INDEX}.mp4 -y 2> >(sed 's/^/[filters${INDEX}] /')"
-    ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "fps=60,${filter_complex},format=yuv420p" -c:v libx264 -f mp4 -r 60 /tmp/ffmpeg_ov${INDEX}.mp4 -y 2> >(sed "s/^/[filters${INDEX}] /") &
+    echo "[filters${INDEX}] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i '/tmp/${file_inputs[$((INDEX + 1))]}.mp4' -filter_complex 'fps=60,${filter_complex},format=yuv420p' -c:v libx264 -r 60 -t 5 /tmp/ffmpeg_ov${INDEX}.mp4 -y 2> >(sed 's/^/[filters${INDEX}] /')"
+    ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "fps=60,${filter_complex},format=yuv420p" -c:v libx264 -f mp4 -r 60 -t 5 /tmp/ffmpeg_ov${INDEX}.mp4 -y 2> >(sed "s/^/[filters${INDEX}] /") &
     # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
     ((INDEX++))
 done
