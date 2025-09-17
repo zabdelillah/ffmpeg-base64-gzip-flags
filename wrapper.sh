@@ -139,6 +139,7 @@ gl_outputs=()
 # Extract gltransition lines
 echo ""
 echo "GLTRANSITION lines:"
+echo $(echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]')
 prevSum="0.0"
 echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
     # echo "$line"
