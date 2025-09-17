@@ -157,13 +157,13 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     # offset=$(($prevSum - $sum))
     offset=$(awk -v prevSum="$prevSum" -v sum="$sum" 'BEGIN {print sum - prevSum}')
     prevSum=$sum
-    echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4"
-    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4 2> >(sed "s/^/[OVERLAY${INDEX}] /")
+    echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4"
     CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
     CONCAT_VFINS+=("[$((INDEX - 2)):v]")
+    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4 2> >(sed "s/^/[OVERLAY${INDEX}] /") 2> >(sed "s/^/[OVERLAY${INDEX}] /") &
 done
 
-
+wait
 
 # INDEX=0
 # for f in "${gl_outputs[@]}"; do
