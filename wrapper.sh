@@ -138,7 +138,7 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
   if (( INDEX >= 2 )); then
     CONCAT_INPUTS+=("${BASH_REMATCH[1]}.overlay.mp4")
-    CONCAT_VFINS+=("[${((INDEX-2))}:v]")
+    CONCAT_VFINS+=("[$((INDEX-2)):v]")
   fi
   ((INDEX++))
 done
