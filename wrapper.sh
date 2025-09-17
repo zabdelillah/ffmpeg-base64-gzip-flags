@@ -138,7 +138,7 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
   if (( INDEX >= 2 )); then
     CONCAT_INPUTS+=("${BASH_REMATCH[1]}.overlay.mp4")
-    CONCAT_VFINS+=("[${INDEX}:v]")
+    CONCAT_VFINS+=("[${INDEX-2}:v]")
   fi
   ((INDEX++))
 done
@@ -166,7 +166,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4"
     # CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
     # CONCAT_VFINS+=("[$((INDEX - 2)):v]")
-    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4 2> >(sed "s/^/[OVERLAY${INDEX}] /") 2> >(sed "s/^/[OVERLAY${INDEX}] /") &
+    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4 2> >(sed "s/^/[OVERLAY${INDEX}] /") &
 done
 
 wait
@@ -192,7 +192,7 @@ echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_com
 ffmpeg ${concat_inputs} -filter_complex "${pre_filter_complex}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
 
-# wait
+wait
 echo "[overlays] concatenation complete"
 
 EXTRA_MAPS=""
