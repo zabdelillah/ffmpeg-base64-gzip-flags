@@ -109,10 +109,10 @@ PIPES=()
 for element in "${FFMPEG_CLIP_SEGMENTS[@]}"
 do
   # mkfifo /tmp/ffmpeg_ov${INDEX}
-  PIPES+=(/tmp/ffmpeg_ov${INDEX})
+  PIPES+=(/tmp/ffmpeg_ov${INDEX}.mp4)
   filter_complex=$(echo "$element" | sed 's/\[[^]]*\]//g')
-    echo "[filters${INDEX}] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i '/tmp/${file_inputs[$((INDEX + 1))]}.mp4' -filter_complex 'fps=60,${filter_complex},format=yuv420p' -c:v libx264 -r 60 /tmp/ffmpeg_ov${INDEX} -y 2> >(sed 's/^/[filters${INDEX}] /')"
-    ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "fps=60,${filter_complex},format=yuv420p" -c:v libx264 -r 60 /tmp/ffmpeg_ov${INDEX} -y 2> >(sed "s/^/[filters${INDEX}] /") &
+    echo "[filters${INDEX}] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i '/tmp/${file_inputs[$((INDEX + 1))]}.mp4' -filter_complex 'fps=60,${filter_complex},format=yuv420p' -c:v libx264 -r 60 /tmp/ffmpeg_ov${INDEX}.mp4 -y 2> >(sed 's/^/[filters${INDEX}] /')"
+    ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i "/tmp/${file_inputs[$((INDEX + 1))]}.mp4" -filter_complex "fps=60,${filter_complex},format=yuv420p" -c:v libx264 -f mp4 -r 60 /tmp/ffmpeg_ov${INDEX}.mp4 -y 2> >(sed "s/^/[filters${INDEX}] /") &
     # ffmpeg -i ~/d81cc681ba900b0c796a68994c0717d2ee3aa258f9bd9552ad50c3945995bcee.webp -filter_complex "${filter_complex},format=yuv420p" -f rawvideo -pix_fmt yuv420p -t 5 /tmp/wtf_ffmpeg_ov${INDEX} -y
     ((INDEX++))
 done
@@ -123,8 +123,8 @@ echo "[filters] all clip-level effects applied"
 FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}" | sed -E 's/\[ov([0-9]+)\]/[\1:v]/g' | sed -E 's/\[out[0-9]+\]$/[out]/' | sed -E 's/\[glout[0-9]+\]$/[out]/')
 PIPES=( "${PIPES[@]/#/-i }" )
 # mkfifo /tmp/ffmpeg_base
-echo "[overlays] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex '$FFMPEG_OVERLAYS' -map '[out]' -t 60 -c:v libx264 /tmp/ffmpeg_base -r 60 -y 2> >(sed 's/^/[overlays] /'') &"
-ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -c:v libx264 /tmp/ffmpeg_base -r 60 -y 2> >(sed "s/^/[overlays] /") &
+echo "[overlays] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex '$FFMPEG_OVERLAYS' -map '[out]' -t 60 -c:v libx264 /tmp/ffmpeg_base.mp4 -r 60 -y 2> >(sed 's/^/[overlays] /'') &"
+ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -c:v libx264 -f mp4 /tmp/ffmpeg_base.mp4 -r 60 -y 2> >(sed "s/^/[overlays] /") &
 wait
 echo "[overlays] concatenation complete"
 
@@ -151,8 +151,8 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
 
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
-echo "[final] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v h264_nvenc -preset fast -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
-ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -preset veryfast -r 60 out.mov -y 2> >(sed "s/^/[final] /")
+echo "[final] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v h264_nvenc -preset fast -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
+ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -preset veryfast -r 60 out.mov -y 2> >(sed "s/^/[final] /")
 echo "[final] subtitle generation complete"
 # fi
 
