@@ -135,7 +135,8 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
 done
 
-gl_outputs=()
+CONCAT_INPUTS=()
+CONCAT_VFINS=()
 # Extract gltransition lines
 echo ""
 echo "GLTRANSITION lines:"
@@ -143,7 +144,7 @@ echo $(echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Z
 prevSum="0.0"
 echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
     # echo "$line"
-    NESTED_FILTERS=$(echo $line | grep -oP 'transition\=[A-Za-z\=\:0-9\.\,]+')
+    NESTED_FILTERS="gl$(echo $line | grep -oP 'transition\=[A-Za-z\=\:0-9\.\,]+')"
     INDEX=$(echo $line | grep -oP '[0-9]+' | tail -n 1)
     echo "[OVERLAY${INDEX}] line: $line"
     NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
@@ -158,18 +159,18 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     prevSum=$sum
     echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4"
     ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4 2> >(sed "s/^/[OVERLAY${INDEX}] /")
-    gl_outputs+=("${file_inputs[$INDEX]}.overlay.mp4")
+    CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
+    CONCAT_VFINS+=("[${(($INDEX - 2))}:v]")
 done
 
-CONCAT_INPUTS=()
-CONCAT_VFINS=()
 
-INDEX=0
-for f in "${gl_outputs[@]}"; do
-  CONCAT_INPUTS+=" -i ${f}.overlay.mp4"
-  CONCAT_VFINS+="[${INDEX}:v]"
-  ((INDEX++))
-done
+
+# INDEX=0
+# for f in "${gl_outputs[@]}"; do
+#   CONCAT_INPUTS+=" -i ${f}.overlay.mp4"
+#   CONCAT_VFINS+=
+#   ((INDEX++))
+# done
 
 echo "[CONCAT] command: ffmpeg ${CONCAT_INPUTS} -filter_complex ${CONCAT_VFINS}concat=n=${INDEX}:v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
 ffmpeg ${CONCAT_INPUTS} -filter_complex "${CONCAT_VFINS}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
