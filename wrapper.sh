@@ -160,7 +160,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4"
     ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4 2> >(sed "s/^/[OVERLAY${INDEX}] /")
     CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
-    CONCAT_VFINS+=("[${(($INDEX - 2))}:v]")
+    CONCAT_VFINS+=("[$((INDEX - 2)):v]")
 done
 
 
