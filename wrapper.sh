@@ -135,6 +135,7 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
 done
 
+gl_outputs=()
 # Extract gltransition lines
 echo ""
 echo "GLTRANSITION lines:"
@@ -154,21 +155,22 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     offset=$(awk -v prevSum="$prevSum" -v sum="$sum" 'BEGIN {print sum - prevSum}')
     prevSum=$sum
     echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4"
-    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4
+    ffmpeg -i ${file_inputs[(($INDEX-1))]} -i ${file_inputs[$INDEX]} -ss ${sum} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs[$INDEX]}.overlay.mp4 2> >(sed "s/^/[OVERLAY${INDEX}] /")
+    gl_outputs+=("${file_inputs[$INDEX]}.overlay.mp4")
 done
 
 CONCAT_INPUTS=""
 CONCAT_VFINS=""
 
 INDEX=0
-for f in "${file_inputs[@]:1}"; do
-  CONCAT_INPUTS+=" -i ${f}.overlay.mp4"
+for f in "${gl_outputs[@]}"; do
+  CONCAT_INPUTS+=" -i ${f}"
   CONCAT_VFINS+="[${INDEX}:v]"
   ((INDEX++))
 done
 
 echo "[CONCAT] command: ffmpeg ${CONCAT_INPUTS} -filter_complex ${CONCAT_VFINS}concat=n=${INDEX}:v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
-ffmpeg ${CONCAT_INPUTS} -filter_complex "${CONCAT_VFINS}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4
+ffmpeg ${CONCAT_INPUTS} -filter_complex "${CONCAT_VFINS}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
 
 # wait
