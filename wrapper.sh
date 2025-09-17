@@ -188,7 +188,7 @@ for vf in "${CONCAT_VFINS[@]}"; do
   pre_filter_complex+="${vf}"
 done
 
-echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=${INDEX}:v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
+echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=$((INDEX-2)):v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
 ffmpeg ${concat_inputs} -filter_complex "${pre_filter_complex}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
 
