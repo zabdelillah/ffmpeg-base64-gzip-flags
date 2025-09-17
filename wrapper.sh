@@ -123,8 +123,8 @@ echo "[filters] all clip-level effects applied"
 FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}" | sed -E 's/\[ov([0-9]+)\]/[\1:v]/g' | sed -E 's/\[out[0-9]+\]$/[out]/' | sed -E 's/\[glout[0-9]+\]$/[out]/')
 PIPES=( "${PIPES[@]/#/-i }" )
 # mkfifo /tmp/ffmpeg_base
-echo "[overlays] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex '$FFMPEG_OVERLAYS' -map '[out]' -t 60 -c:v libx264 /tmp/ffmpeg_base.mp4 -r 60 -y 2> >(sed 's/^/[overlays] /'') &"
-FFMPEG_OVERLAYS_CMD="ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -f lavfi -i color=c=black:s=1080x1910:r=60:d=30 ${PIPES[@]} -filter_complex "$FFMPEG_OVERLAYS" -map "[out]" -t 60 -c:v libx264 -f mp4 /tmp/ffmpeg_base.mp4 -r 60 -y"
+FFMPEG_OVERLAYS_CMD="ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr ${PIPES[@]} -filter_complex '$FFMPEG_OVERLAYS' -map '[out]' -t 60 -c:v libx264 -f mp4 /tmp/ffmpeg_base.mp4 -r 60 -y"
+echo "[overlays] command: $FFMPEG_OVERLAYS_CMD"
 ## BEGIN OVERLAY / GLTRANSITION DISTRIBUTIONS
 #!/bin/bash
 
@@ -144,6 +144,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     # echo "$line"
     NESTED_FILTERS=$(echo $line | grep -oP 'gltransition\=[A-Za-z\=\:0-9\.\,]+')
     INDEX=$(echo $line | grep -oP '[0-9]+' | tail -n 1)
+    echo "[OVERLAY${INDEX}] line: $line"
     NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
     # Extract offset and duration using parameter expansion and grep/sed
     offset=$(echo "$line" | grep -oP 'offset=\K[0-9.]+')
@@ -164,7 +165,7 @@ CONCAT_VFINS=""
 
 INDEX=0
 for f in "${gl_outputs[@]}"; do
-  CONCAT_INPUTS+=" -i ${f}"
+  CONCAT_INPUTS+=" -i ${f}.overlay.mp4"
   CONCAT_VFINS+="[${INDEX}:v]"
   ((INDEX++))
 done
