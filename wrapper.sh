@@ -135,9 +135,11 @@ CONCAT_VFINS=()
 INDEX=0
 while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   file_inputs+=("${BASH_REMATCH[1]}")
-  CONCAT_INPUTS+=("${BASH_REMATCH[1]}.overlay.mp4")
-  CONCAT_VFINS+=("[${INDEX}:v]")
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
+  if (( INDEX >= 2 )); then
+    CONCAT_INPUTS+=("${BASH_REMATCH[1]}.overlay.mp4")
+    CONCAT_VFINS+=("[${INDEX}:v]")
+  fi
   ((INDEX++))
 done
 
@@ -176,8 +178,18 @@ wait
 #   ((INDEX++))
 # done
 
-echo "[CONCAT] command: ffmpeg ${CONCAT_INPUTS[@]} -filter_complex ${CONCAT_VFINS[@]}concat=n=${INDEX}:v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
-ffmpeg ${CONCAT_INPUTS[@]} -filter_complex "${CONCAT_VFINS[@]}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
+concat_inputs=""
+for vf in "${CONCAT_INPUTS[@]}"; do
+  concat_inputs+=" -i ${vf}"
+done
+
+pre_filter_complex=""
+for vf in "${CONCAT_VFINS[@]}"; do
+  pre_filter_complex+="${vf}"
+done
+
+echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=${INDEX}:v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
+ffmpeg ${concat_inputs} -filter_complex "${pre_filter_complex}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
 
 # wait
