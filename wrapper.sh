@@ -136,11 +136,11 @@ INDEX=0
 while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   file_inputs_b+=("${BASH_REMATCH[1]}")
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
-  if (( INDEX >= 1 )); then
+  if (( INDEX >= 0 )); then
     if (( INDEX >= 2 )); then
       CONCAT_INPUTS+=("${BASH_REMATCH[1]}.overlay.mp4")
     fi
-    CONCAT_VFINS+=("[$((INDEX-1)):v]")
+    CONCAT_VFINS+=("[$((INDEX)):v]")
   fi
   ((INDEX++))
 done
@@ -174,8 +174,13 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
     if [[ -z "${NEXT_OFFSET}" ]]; then
       NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
-      echo "[OVERLAY${INDEX}] search: \[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+"
-      echo "[OVERLAY${INDEX}] search: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+")"
+      if [[ ! -z "${NEXT_OFFSET}" ]]; then
+        # echo "[OVERLAY$((INDEX + 1))] command: ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-2))]} -i ${file_inputs_b[(($INDEX-1))]} -filter_complex ${NEW_FILTERS} -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4"
+        FORWARD_NESTED_FILTERS=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+" | grep -oP 'duration=[\d\.\:a-z\=A-Z]+')
+        FORWARD_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]gltransition=${FORWARD_NESTED_FILTERS}[out]"
+        ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[(($INDEX))]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 /tmp/ffmpeg_ovfinal.mp4.overlay.mp4 -y 2> >(sed "s/^/[OVERLAYFINAL] /")
+        CONCAT_INPUTS+=("/tmp/ffmpeg_ovfinal.mp4.overlay.mp4")
+      fi
     fi
     if (( INDEX > 2 )); then
       echo "[OVERLAY${INDEX}] next index: $((INDEX + 1))"
