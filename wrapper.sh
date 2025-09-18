@@ -148,11 +148,15 @@ done
 # Extract overlay lines
 echo "$FFMPEG_OVERLAYS_CMD" | grep -oP "overlay=[a-z\=\'\(\),\d\*\.\:]+\[out[\d]+\]" | while read -r line; do
   INDEX=$(echo $line | grep -oP '[0-9\.]+' | tail -n 1)
-  START=$(echo $line | grep -oP 'gte\(t\,[\d]+\)' | grep -oP '[0-9\.]+')
-  END=$(echo $line | grep -oP 'lte\(t\,[\d]+\)' | grep -oP '[0-9\.]+')  
+  START=$(echo $line | grep -oP 'gte\(t\,[\d\.]+\)' | grep -oP '[0-9\.]+')
+  END=$(echo $line | grep -oP 'lte\(t\,[\d\.]+\)' | grep -oP '[0-9\.]+')  
   NESTED_FILTERS=$(echo $line | grep -oP 'x=[\d\:a-z\=]+')
   NEW_FILTERS="[0:v][1:v]overlay=${NESTED_FILTERS}[out]"
   DURATION=$(awk -v start="$START" -v end="$END" 'BEGIN {print end - start}')
+  echo "[OVERLAY${INDEX}] start-string: $(echo $line | grep -oP 'gte\(t\,[\d\.]+\)')"
+  echo "[OVERLAY${INDEX}] end-string: $(echo $line | grep -oP 'lte\(t\,[\d\.]+\)')"
+  echo "[OVERLAY${INDEX}] start: ${START}"
+  echo "[OVERLAY${INDEX}] end: ${END}"
   echo "[OVERLAY${INDEX}] ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4"
   ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
   if (( INDEX == 1 )); then
