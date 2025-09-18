@@ -137,7 +137,9 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   file_inputs_b+=("${BASH_REMATCH[1]}")
   ffmpeg_cmd=${ffmpeg_cmd#*"-i ${BASH_REMATCH[1]}"}
   if (( INDEX >= 1 )); then
-    CONCAT_INPUTS+=("${BASH_REMATCH[1]}.overlay.mp4")
+    if (( INDEX >= 2 )); then
+      CONCAT_INPUTS+=("${BASH_REMATCH[1]}.overlay.mp4")
+    fi
     CONCAT_VFINS+=("[$((INDEX-1)):v]")
   fi
   ((INDEX++))
@@ -170,8 +172,10 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
 
     # Sum Again
     NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
-    if [[ -z "${NEXT_OFFSET+x}" ]]; then
+    if [[ -z "${NEXT_OFFSET}" ]]; then
       NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
+      echo "[OVERLAY${INDEX}] search: \[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+"
+      echo "[OVERLAY${INDEX}] search: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+")"
     fi
     if (( INDEX > 2 )); then
       echo "[OVERLAY${INDEX}] next index: $((INDEX + 1))"
