@@ -167,7 +167,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
 
     # Sum Again
     if (( INDEX > 2 )); then
-      NEXT_OFFSET=$(echo "$FFMPEG_OVERLAYS_CMD" | ggrep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]" | ggrep -oP 'offset=[\d\.]+' | ggrep -oP '[\d\.]+$' | bc)
+      NEXT_OFFSET=$(echo "$FFMPEG_OVERLAYS_CMD" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$' | bc)
       DURATION=$((NEXT_OFFSET - offset))
     else
       DURATION=${NEXT_OFFSET}
