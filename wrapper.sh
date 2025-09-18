@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "complete=startup"
 # FULL_ARGS=$( echo "$@" | base64 -d | gunzip )
 BASE_FULL_ARGS=$(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.flags' | base64 -d | gunzip)
 set -- $BASE_FULL_ARGS
@@ -40,10 +41,12 @@ do
   if [ "$i" == "-i" ]; then
     KILL=1
   fi
-done
+
+echo "complete=download"
 
 wait
 echo "[INITCONVERT] all clips pre-converted"
+echo "complete=preconvert"
 
 # for clip in *.mp4;
 # do
@@ -119,6 +122,7 @@ done
 echo
 wait
 echo "[filters] all clip-level effects applied"
+echo "complete=filters"
 
 FFMPEG_OVERLAYS=$(echo "[0:v][1:v]overlay${FFMPEG_PREMIX#*;\[0:v]\[ov1]overlay}" | sed -E 's/\[ov([0-9]+)\]/[\1:v]/g' | sed -E 's/\[out[0-9]+\]$/[out]/' | sed -E 's/\[glout[0-9]+\]$/[out]/')
 PIPES=( "${PIPES[@]/#/-i }" )
@@ -225,6 +229,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     # CONCAT_VFINS+=("[$((INDEX - 2)):v]")
     ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-2))]} -i ${file_inputs_b[(($INDEX-1))]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
 done
+echo "complete=overlays"
 
 # INDEX=0
 # for f in "${gl_outputs[@]}"; do
@@ -254,6 +259,7 @@ ffmpeg -nostdin -progress /dev/stderr -f concat -safe 0 -i concat.txt -c copy /t
 
 wait
 echo "[overlays] concatenation complete"
+echo "complete=concat"
 
 EXTRA_MAPS=""
 AUDIOS=""
