@@ -166,10 +166,8 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     echo "[OVERLAY${INDEX}] command: ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4"
     # CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
     # CONCAT_VFINS+=("[$((INDEX - 2)):v]")
-    ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /") &
+    ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
 done
-
-wait
 
 # INDEX=0
 # for f in "${gl_outputs[@]}"; do
