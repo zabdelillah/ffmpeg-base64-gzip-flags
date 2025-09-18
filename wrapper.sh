@@ -151,6 +151,9 @@ prevSum="0.0"
 echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
     # echo "$line"
     NESTED_FILTERS="gltransition=$(echo $line | grep -oP 'duration\=[A-Za-z\=\:0-9\.\,]+')"
+    if (( INDEX == 2 )); then
+      NESTED_FILTERS="gltransition=$(echo $line | grep -oP 'offset\=[A-Za-z\=\:0-9\.\,]+')"
+    fi
     INDEX=$(echo $line | grep -oP '[0-9]+' | tail -n 1)
     echo "[OVERLAY${INDEX}] line: $line"
     NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
@@ -175,7 +178,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
       echo "[OVERLAY${INDEX}] next offset: ${NEXT_OFFSET}"
       DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum - prevSum}')
     else
-      DURATION=${NEXT_OFFSET}
+      DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum + prevSum}')
     fi
 
     if (( DURATION < 0 )); then
