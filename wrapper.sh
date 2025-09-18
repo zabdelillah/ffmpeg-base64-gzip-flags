@@ -145,6 +145,19 @@ while [[ $ffmpeg_cmd =~ -i[[:space:]]+([^[:space:]]+) ]]; do
   ((INDEX++))
 done
 
+# Extract overlay lines
+echo "$FFMPEG_OVERLAYS_CMD" | grep -oP "overlay=[a-z\=\'\(\),\d\*\.\:]+\[out[\d]+\]" | while read -r line; do
+  INDEX=$(echo $line | grep -oP '[0-9\.]+' | tail -n 1)
+  START=$(echo $line | grep -oP 'gte\(t\,[\d]+\)' | grep -oP '[0-9\.]+')
+  END=$(echo $line | grep -oP 'lte\(t\,[\d]+\)' | grep -oP '[0-9\.]+')  
+  NESTED_FILTERS=$(echo $line | grep -oP 'x=[\d\:a-z\=]+')
+  NEW_FILTERS="[0:v][1:v]overlay=${NESTED_FILTERS}[out]"
+  DURATION=$((END - START))
+  echo "[OVERLAY${INDEX}] ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4"
+  ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
+done
+# End extract overlay lines
+
 # Extract gltransition lines
 echo ""
 echo "GLTRANSITION lines:"
@@ -179,7 +192,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
         FORWARD_NESTED_FILTERS=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+" | grep -oP 'duration=[\d\.\:a-z\=A-Z]+')
         FORWARD_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]gltransition=${FORWARD_NESTED_FILTERS}[out]"
         ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[(($INDEX))]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 /tmp/ffmpeg_ovfinal.mp4.overlay.mp4 -y 2> >(sed "s/^/[OVERLAYFINAL] /")
-        CONCAT_INPUTS+=("/tmp/ffmpeg_ovfinal.mp4.overlay.mp4")
+        # CONCAT_INPUTS+=("/tmp/ffmpeg_ovfinal.mp4.overlay.mp4")
       fi
     fi
     if (( INDEX > 2 )); then
@@ -218,6 +231,8 @@ for vf in "${CONCAT_INPUTS[@]}"; do
   concat_inputs+=" -i ${vf}"
   echo "file '${vf}'" >> concat.txt
 done
+
+echo "file '/tmp/ffmpeg_ovfinal.mp4.overlay.mp4'" >> concat.txt
 
 pre_filter_complex=""
 for vf in "${CONCAT_VFINS[@]}"; do
