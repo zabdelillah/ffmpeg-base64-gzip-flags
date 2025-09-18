@@ -150,7 +150,7 @@ echo $(echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Z
 prevSum="0.0"
 echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
     # echo "$line"
-    NESTED_FILTERS="gltransition=$(echo $line | grep -oP 'offset\=[A-Za-z\=\:0-9\.\,]+')"
+    NESTED_FILTERS="gltransition=$(echo $line | grep -oP 'duration\=[A-Za-z\=\:0-9\.\,]+')"
     INDEX=$(echo $line | grep -oP '[0-9]+' | tail -n 1)
     echo "[OVERLAY${INDEX}] line: $line"
     NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
@@ -163,10 +163,10 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     # offset=$(($prevSum - $sum))
     offset=$(awk -v prevSum="$prevSum" -v sum="$sum" 'BEGIN {print sum - prevSum}')
     prevSum=$sum
-    echo "[OVERLAY${INDEX}] command: ffmpeg -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4"
+    echo "[OVERLAY${INDEX}] command: ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4"
     # CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
     # CONCAT_VFINS+=("[$((INDEX - 2)):v]")
-    ffmpeg -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /") &
+    ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /") &
 done
 
 wait
@@ -190,7 +190,7 @@ for vf in "${CONCAT_VFINS[@]}"; do
 done
 
 cat concat.txt
-ffmpeg -f concat -safe 0 -i concat.txt -c copy /tmp/ffmpeg_base.mp4
+ffmpeg -nostdin -progress /dev/stderr -f concat -safe 0 -i concat.txt -c copy /tmp/ffmpeg_base.mp4
 # echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=$((INDEX-2)):v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
 # ffmpeg ${concat_inputs} -filter_complex "${pre_filter_complex}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
