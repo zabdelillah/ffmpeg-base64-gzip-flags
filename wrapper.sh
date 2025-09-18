@@ -181,7 +181,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
       DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum + prevSum}')
     fi
 
-    if (( DURATION < 0 )); then
+    if (( $(echo "$DURATION < 0" | bc -l) )); then
       DURATION=$(awk -v prevSum="$DURATION" -v sum="$TOTAL_DURATION" 'BEGIN {print sum + prevSum}')
     fi
 
