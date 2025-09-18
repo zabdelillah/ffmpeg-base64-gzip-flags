@@ -41,7 +41,7 @@ do
   if [ "$i" == "-i" ]; then
     KILL=1
   fi
-
+done
 echo "complete=download"
 
 wait
