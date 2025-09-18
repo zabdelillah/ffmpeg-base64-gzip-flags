@@ -155,15 +155,26 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     echo "[OVERLAY${INDEX}] line: $line"
     NEW_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]${NESTED_FILTERS}[out]"
     # Extract offset and duration using parameter expansion and grep/sed
-    offset=$(echo "$line" | grep -oP 'offset=\K[0-9.]+')
-    duration=$(echo "$line" | grep -oP 'duration=\K[0-9.]+')
+    offset=$(echo "$line" | grep -oP 'offset=\K[0-9.]+' | bc)
+    # duration=$(echo "$line" | grep -oP 'duration=\K[0-9.]+')
 
     # Calculate sum (offset + duration)
     sum=$(echo "$offset + $duration" | bc)
     # offset=$(($prevSum - $sum))
-    offset=$(awk -v prevSum="$prevSum" -v sum="$sum" 'BEGIN {print sum - prevSum}')
-    prevSum=$sum
-    echo "[OVERLAY${INDEX}] command: ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4"
+    # offset=$(awk -v prevSum="$prevSum" -v sum="$sum" 'BEGIN {print sum - prevSum}')
+
+    # prevSum=$sum
+
+    # Sum Again
+    if (( INDEX > 2 )); then
+      NEXT_OFFSET=$(echo "$FFMPEG_OVERLAYS_CMD" | ggrep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]" | ggrep -oP 'offset=[\d\.]+' | ggrep -oP '[\d\.]+$' | bc)
+      DURATION=$((NEXT_OFFSET - offset))
+    else
+      DURATION=${NEXT_OFFSET}
+    fi
+
+    # End Sum Again
+    echo "[OVERLAY${INDEX}] command: ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4"
     # CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
     # CONCAT_VFINS+=("[$((INDEX - 2)):v]")
     ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
