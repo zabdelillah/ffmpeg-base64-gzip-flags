@@ -170,6 +170,9 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
 
     # Sum Again
     NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
+    if [[ -z "${NEXT_OFFSET+x}" ]]; then
+      NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
+    fi
     if (( INDEX > 2 )); then
       echo "[OVERLAY${INDEX}] next index: $((INDEX + 1))"
       echo "[OVERLAY${INDEX}] next cmdq: echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]"
@@ -188,10 +191,10 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     echo "[OVERLAY${INDEX}] sums: ${DURATION}"
 
     # End Sum Again
-    echo "[OVERLAY${INDEX}] command: ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4"
+    echo "[OVERLAY${INDEX}] command: ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-2))]} -i ${file_inputs_b[(($INDEX-1))]} -filter_complex ${NEW_FILTERS} -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4"
     # CONCAT_INPUTS+=("${file_inputs[$INDEX]}.overlay.mp4")
     # CONCAT_VFINS+=("[$((INDEX - 2)):v]")
-    ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
+    ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-2))]} -i ${file_inputs_b[(($INDEX-1))]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
 done
 
 # INDEX=0
