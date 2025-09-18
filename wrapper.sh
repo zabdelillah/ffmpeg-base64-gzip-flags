@@ -167,11 +167,11 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
 
     # Sum Again
     if (( INDEX > 2 )); then
-      NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
+      NEXT_OFFSET=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]" | grep -oP 'offset=[\d\.]+' | grep -oP '[\d\.]+$')
       echo "[OVERLAY${INDEX}] next index: $((INDEX + 1))"
       echo "[OVERLAY${INDEX}] next cmdq: echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]"
-      echo "[OVERLAY${INDEX}] next cmd: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]")"
-      echo "[OVERLAY${INDEX}] next offset: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))}\]" | grep -oP 'offset=[\d\.]+')"
+      echo "[OVERLAY${INDEX}] next cmd: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]")"
+      echo "[OVERLAY${INDEX}] next offset: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]" | grep -oP 'offset=[\d\.]+')"
       echo "[OVERLAY${INDEX}] next offset: ${NEXT_OFFSET}"
       DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum - prevSum}')
     else
