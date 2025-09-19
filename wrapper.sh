@@ -285,10 +285,12 @@ if [[ "$FFMPEG_STRING" == *"aout"* ]]; then
   FFMPEG_POSTMIX+="[out];${FFMPEG_AUDIOS}"
 fi
 echo "[final] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v h264_nvenc -preset fast -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
-ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -preset veryfast -r 60 out.mov -y 2> >(sed "s/^/[final] /")
+ffmpeg -fflags +genpts -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex "$FFMPEG_POSTMIX" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -preset veryfast -r 60 out.mov -y 2> >(sed "s/^/[final] /")
 echo "[final] subtitle generation complete"
 # fi
 
+echo "complete=subtitles"
 #DISPLAY=:100 /usr/local/bin/ffmpeg "$@"
 
 curl -T out.mov $(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.output')
+echo "path=$(curl "${FFMPEG_METADATA_ENDPOINT}" | jq -r '.output')"
