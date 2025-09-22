@@ -174,6 +174,8 @@ echo ""
 echo "GLTRANSITION lines:"
 echo $(echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]')
 prevSum="0.0"
+OVFINAL=0
+
 echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout[\d]+\]' | while read -r line; do
     # echo "$line"
     INDEX=$(echo $line | grep -oP '[0-9]+' | tail -n 1)
@@ -203,6 +205,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
         FORWARD_NESTED_FILTERS=$(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "\[glprep$((INDEX + 1))\]gltransition\=[A-Za-z\=\:0-9\.\,]+" | grep -oP 'duration=[\d\.\:a-z\=A-Z]+')
         FORWARD_FILTERS="[0:v]format=rgba[input0];[1:v]format=rgba[input1];[input0][input1]gltransition=${FORWARD_NESTED_FILTERS}[out]"
         ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[(($INDEX))]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t 5 /tmp/ffmpeg_ovfinal.mp4.overlay.mp4 -y 2> >(sed "s/^/[OVERLAYFINAL] /")
+        OVFINAL=1
         # CONCAT_INPUTS+=("/tmp/ffmpeg_ovfinal.mp4.overlay.mp4")
       fi
     fi
@@ -252,7 +255,9 @@ for vf in "${CONCAT_INPUTS[@]}"; do
   echo "file '${vf}'" >> concat.txt
 done
 
-echo "file '/tmp/ffmpeg_ovfinal.mp4.overlay.mp4'" >> concat.txt
+if (( OVFINAL )); then
+  echo "file '/tmp/ffmpeg_ovfinal.mp4.overlay.mp4'" >> concat.txt
+fi
 
 pre_filter_complex=""
 for vf in "${CONCAT_VFINS[@]}"; do
@@ -260,7 +265,7 @@ for vf in "${CONCAT_VFINS[@]}"; do
 done
 
 cat concat.txt
-ffmpeg -nostdin -progress /dev/stderr -f concat -safe 0 -i concat.txt -c copy /tmp/ffmpeg_base.mp4
+ffmpeg -nostdin -progress /dev/stderr -f concat -safe 0 -i concat.txt -c copy /tmp/ffmpeg_base.mp4 -y 2> >(sed "s/^/[CONCAT] /")
 echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=$((INDEX-2)):v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
 # ffmpeg ${concat_inputs} -filter_complex "${pre_filter_complex}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
