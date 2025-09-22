@@ -212,7 +212,14 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
       echo "[OVERLAY${INDEX}] next cmd: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]")"
       echo "[OVERLAY${INDEX}] next offset: $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]" | grep -oP 'offset=[\d\.]+')"
       echo "[OVERLAY${INDEX}] next offset: ${NEXT_OFFSET}"
+
       DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum - prevSum}')
+      
+      if [ -z " $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]")" ]; then
+        echo "[OVERLAY${INDEX}] duration ${DURATION} is less than 0, prevSum: ${TOTAL_DURATION}"
+        DURATION=$(awk -v prevSum="$DURATION" -v sum="$TOTAL_DURATION" 'BEGIN {print sum + prevSum}')
+      fi
+
     else
       DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum + prevSum}')
     fi
