@@ -215,19 +215,19 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
 
       DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum - prevSum}')
 
-      if [ -z " $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]")" ]; then
-        echo "[OVERLAY${INDEX}] duration ${DURATION} is less than 0, prevSum: $(echo $TOTAL_DURATION | grep -oP "[\d\.]+$")"
-        DURATION=$(awk -v prevSum="$DURATION" -v sum="$(echo $TOTAL_DURATION | grep -oP "[\d\.]+$")" 'BEGIN {print sum + prevSum}')
-      fi
+      # if [ -z " $(echo "${FFMPEG_OVERLAYS_CMD}" | grep -oP "gltransition\=[A-Za-z\=\:0-9\.\,]+\[glout$((INDEX + 1))\]")" ]; then
+      #   echo "[OVERLAY${INDEX}] duration ${DURATION} is less than 0, prevSum: $(echo $TOTAL_DURATION | grep -oP "[\d\.]+$")"
+      #   DURATION=$(awk -v prevSum="$DURATION" -v sum="$(echo $TOTAL_DURATION | grep -oP "[\d\.]+$")" 'BEGIN {print sum + prevSum}')
+      # fi
 
     else
       DURATION=$(awk -v prevSum="$offset" -v sum="$NEXT_OFFSET" 'BEGIN {print sum + prevSum}')
     fi
 
-    # if (( $(echo "$DURATION < 0" | bc -l) )); then
-    #   echo "[OVERLAY${INDEX}] duration ${DURATION} is less than 0, prevSum: ${TOTAL_DURATION}"
-    #   DURATION=$(awk -v prevSum="$DURATION" -v sum="$TOTAL_DURATION" 'BEGIN {print sum + prevSum}')
-    # fi
+    if (( $(echo "$DURATION < 0" | bc -l) )); then
+      echo "[OVERLAY${INDEX}] duration ${DURATION} is less than 0, prevSum: $(echo $TOTAL_DURATION | grep -oP "[\d\.]+$")"
+      DURATION=$(awk -v prevSum="$DURATION" -v sum="$(echo $TOTAL_DURATION | grep -oP "[\d\.]+$")" 'BEGIN {print sum + prevSum}')
+    fi
 
     echo "[OVERLAY${INDEX}] sums: ${DURATION}"
 
