@@ -300,7 +300,7 @@ fi
 echo "${FFMPEG_POSTMIX}" > ffmpeg_postmix_list
 
 echo "[final] command: ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex '$FFMPEG_POSTMIX' $EXTRA_MAPS ${TOTAL_DURATION} -c:v h264_nvenc -preset fast -r 60 out.mov -y 2> >(sed 's/^/[final] /')"
-ffmpeg -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex "${FFMPEG_POSTMIX}" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -preset veryfast -r 60 out.mov -y 2> >(sed "s/^/[final] /")
+ffmpeg -fflags +genpts -init_hw_device cuda=primary:0 -filter_hw_device primary -nostdin -progress /dev/stderr -i /tmp/ffmpeg_base.mp4 $AUDIOS -filter_complex "${FFMPEG_POSTMIX}" $EXTRA_MAPS ${TOTAL_DURATION} -c:v libx264 -preset veryfast -r 60 out.mov -y 2> >(sed "s/^/[final] /")
 echo "[final] subtitle generation complete"
 # fi
 
