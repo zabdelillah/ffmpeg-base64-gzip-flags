@@ -265,7 +265,7 @@ for vf in "${CONCAT_VFINS[@]}"; do
 done
 
 cat concat.txt
-ffmpeg -nostdin -progress /dev/stderr -f concat -safe 0 -i concat.txt -c copy /tmp/ffmpeg_base.mp4 -y 2> >(sed "s/^/[CONCAT] /")
+ffmpeg -nostdin -progress /dev/stderr -f concat -safe 0 -i concat.txt -c:v libx264 /tmp/ffmpeg_base.mp4 -y 2> >(sed "s/^/[CONCAT] /")
 echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=$((INDEX-2)):v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
 # ffmpeg ${concat_inputs} -filter_complex "${pre_filter_complex}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
