@@ -218,6 +218,7 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP '\[glprep[\d]+\]gltransition\=[A-Za-z\=\:
     fi
 
     if (( $(echo "$DURATION < 0" | bc -l) )); then
+      echo "[OVERLAY${INDEX}] duration ${DURATION} is less than 0, prevSum: ${TOTAL_DURATION}"
       DURATION=$(awk -v prevSum="$DURATION" -v sum="$TOTAL_DURATION" 'BEGIN {print sum + prevSum}')
     fi
 
@@ -253,7 +254,7 @@ done
 
 cat concat.txt
 ffmpeg -nostdin -progress /dev/stderr -f concat -safe 0 -i concat.txt -c copy /tmp/ffmpeg_base.mp4
-# echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=$((INDEX-2)):v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
+echo "[CONCAT] command: ffmpeg ${concat_inputs} -filter_complex ${pre_filter_complex}concat=n=$((INDEX-2)):v=1[out] -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4"
 # ffmpeg ${concat_inputs} -filter_complex "${pre_filter_complex}concat=n=${INDEX}:v=1[out]" -map '[out]' -codec libx264 /tmp/ffmpeg_base.mp4 2> >(sed "s/^/[CONCAT] /")
 ## END OVERLAY / GLTRANSITION DISTRIBUTIONS
 
