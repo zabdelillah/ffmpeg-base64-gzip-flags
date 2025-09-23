@@ -163,9 +163,9 @@ echo "$FFMPEG_OVERLAYS_CMD" | grep -oP "overlay=[a-z\=\'\(\),\d\*\.\:]+\[out[\d]
   echo "[OVERLAY${INDEX}] end: ${END}"
   echo "[OVERLAY${INDEX}] ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex ${NEW_FILTERS} -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4"
   ffmpeg -nostdin -progress /dev/stderr -i ${file_inputs_b[(($INDEX-1))]} -i ${file_inputs_b[$INDEX]} -filter_complex "${NEW_FILTERS}" -map '[out]' -t ${DURATION} ${file_inputs_b[$INDEX]}.overlay.mp4 -y 2> >(sed "s/^/[OVERLAY${INDEX}] /")
-  if (( INDEX == 1 )); then
-    echo "file '${file_inputs_b[$INDEX]}.overlay.mp4'" >> concat.txt
-  fi
+  # if (( INDEX == 1 )); then
+  #   echo "file '${file_inputs_b[$INDEX]}.overlay.mp4'" >> concat.txt
+  # fi
 done
 # End extract overlay lines
 
