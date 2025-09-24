@@ -43,7 +43,7 @@ function runFfmpeg(context, index, args) {
     });
 
     ffmpeg.stderr.on('data', data => {
-      // console.log(`stderr: ${data}`);
+      console.log(`stderr: ${data}`);
     });
 
     ffmpeg.on('close', code => {
@@ -65,6 +65,9 @@ function runFfmpeg(context, index, args) {
 			case 254:
     		console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code} - file not on disk`));
+			case 255:
+    		console.log(`error=${context}${index}`)
+				reject(new Error(`FFmpeg exited with code ${code} - cuda loading issue`));
 			default:
 				console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code}`));
@@ -366,7 +369,7 @@ Object.keys(chains).forEach((input) => {
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
-					"-ss", (chains[chains[input].overlay.imports].overlay.time.end - (duration / 2)),
+					"-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
 					"-i", 
 					("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 					"-i", 
@@ -398,7 +401,7 @@ Object.keys(chains).forEach((input) => {
 							"-nostdin", 
 							"-progress", 
 							"pipe:1",
-							"-ss", (chains[chains[input].overlay.imports].overlay.time.end - (duration / 2)),
+							"-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
 							"-i", 
 							("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 							"-i", 
@@ -569,7 +572,7 @@ console.log("** CHAIN 3 **");
 	    	"-i", "/tmp/ffmpeg.audio.mp4",
 	    	"-filter_complex_script", "/tmp/ffmpeg.subtitles.txt",
 	    	"-c:v", "libx264",
-	    	"/tmp/ffmpeg.final.mp4",
+	    	"/tmp/ffmpeg.final.mp4", "-y"
 	    ]
     }
 
