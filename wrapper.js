@@ -299,10 +299,10 @@ Object.keys(chains).forEach((input) => {
 			["preconvert", ["-framerate", "1", "-i", ("/tmp/" + chains[input].input), "-filter_complex", "tpad=stop=-1:stop_mode=clone,fps=1,format=yuv420p", "-c:v", "libx264", "-r", "1", "-t", duration, ("/tmp/ffmpeg.preconvert."+input+".mp4"), "-y"]],
 			["filters", 
 				[	
-					// "-init_hw_device",
-					// "cuda=primary:0",
-					// "-filter_hw_device",
-					// "primary",
+					"-init_hw_device",
+					"cuda=primary:0",
+					"-filter_hw_device",
+					"primary",
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
@@ -358,10 +358,10 @@ Object.keys(chains).forEach((input) => {
 
 			chains[input].transition = [
 				["overlay", [	
-					// "-init_hw_device",
-					// "cuda=primary:0",
-					// "-filter_hw_device",
-					// "primary",
+					"-init_hw_device",
+					"cuda=primary:0",
+					"-filter_hw_device",
+					"primary",
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
@@ -389,10 +389,10 @@ Object.keys(chains).forEach((input) => {
 				if (Object.hasOwn(chains[input].overlay, "imports")) {
 					chains[input].transition = [
 						["overlay", [	
-							// "-init_hw_device",
-							// "cuda=primary:0",
-							// "-filter_hw_device",
-							// "primary",
+							"-init_hw_device",
+							"cuda=primary:0",
+							"-filter_hw_device",
+							"primary",
 							"-nostdin", 
 							"-progress", 
 							"pipe:1",
@@ -416,10 +416,10 @@ Object.keys(chains).forEach((input) => {
 				} else {
 					chains[input].transition = [
 						["overlay", [	
-							// "-init_hw_device",
-							// "cuda=primary:0",
-							// "-filter_hw_device",
-							// "primary",
+							"-init_hw_device",
+							"cuda=primary:0",
+							"-filter_hw_device",
+							"primary",
 							"-nostdin", 
 							"-progress", 
 							"pipe:1", 
@@ -594,6 +594,12 @@ console.log("** CHAIN 3 **");
 		    console.log('File written successfully');
 		  }
 		}))
+
+		if (process.env.FONT_URLS) {
+			process.env.FONT_URLS.split(",").forEach((item) => {
+				transitionPromises.push(spawn('curl', ["-O", item]))
+			})
+		}
 
 		await runFfmpegChain("0", [
 			["concat", concat_args],
