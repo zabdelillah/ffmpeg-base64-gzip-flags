@@ -56,21 +56,35 @@ function runFfmpeg(context, index, args) {
     	case 8:
     		console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code} - missing filter / syntax error`));
+				break;
     	case 222:
     		console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code} - durationi error`));
+				break;
 			case 222:
     		console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code} - empty subtitles`));
+				break;
+			case 234:
+    		console.log(`error=${context}${index}`)
+				reject(new Error(`FFmpeg exited with code ${code} - audio / amix error / argument size incorrect`));
+				break;
 			case 254:
     		console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code} - file not on disk`));
+				break;
 			case 255:
     		console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code} - cuda loading issue`));
+				break;
+			case null:
+				console.log(`retry=${context}${index}`)
+				runFfmpeg(context, index, args).then(resolve).catch(reject);
+				break;
 			default:
 				console.log(`error=${context}${index}`)
 				reject(new Error(`FFmpeg exited with code ${code}`));
+				break;
     	}
     });
   });
@@ -201,6 +215,16 @@ const regex_overlay_enable = /(enable=.*\:)x/
 let audio_index = 1
 let subtitles_match = ""
 
+let HW_ACCELL_INIT = [
+	"-init_hw_device",
+	"cuda=primary:0",
+	"-filter_hw_device",
+	"primary"
+]
+if (process.env.USE_GPU == 0) {
+	HW_ACCELL_INIT = []
+}
+
 filter_complex_matches.forEach((filter_chain) => {
 	const filter_assignment = filter_chain.match(regex_filters)
 	const filter_glprep = filter_chain.match(regex_glprep)
@@ -303,10 +327,7 @@ Object.keys(chains).forEach((input) => {
 			["preconvert", ["-framerate", "1", "-i", ("/tmp/" + chains[input].input), "-filter_complex", "tpad=stop=-1:stop_mode=clone,fps=1,format=yuv420p", "-c:v", "libx264", "-r", "1", "-t", duration, ("/tmp/ffmpeg.preconvert."+input+".mp4"), "-y"]],
 			["filters", 
 				[	
-					"-init_hw_device",
-					"cuda=primary:0",
-					"-filter_hw_device",
-					"primary",
+					...HW_ACCELL_INIT,
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
@@ -324,10 +345,6 @@ Object.keys(chains).forEach((input) => {
 					("/tmp/ffmpeg.filters."+input+".mp4"),
 					"-y"]
 				]
-		]
-	} else {
-		chains[input].audioFilters = [
-
 		]
 	}
 	// Promise.resolve(asset)
@@ -362,14 +379,11 @@ Object.keys(chains).forEach((input) => {
 
 			chains[input].transition = [
 				["overlay", [	
-					"-init_hw_device",
-					"cuda=primary:0",
-					"-filter_hw_device",
-					"primary",
+					...HW_ACCELL_INIT,
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
-					"-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
+					// "-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
 					"-i", 
 					("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 					"-i", 
@@ -394,14 +408,11 @@ Object.keys(chains).forEach((input) => {
 				if (Object.hasOwn(chains[input].overlay, "imports")) {
 					chains[input].transition = [
 						["overlay", [	
-							"-init_hw_device",
-							"cuda=primary:0",
-							"-filter_hw_device",
-							"primary",
+							...HW_ACCELL_INIT,
 							"-nostdin", 
 							"-progress", 
 							"pipe:1",
-							"-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
+							// "-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
 							"-i", 
 							("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 							"-i", 
@@ -422,14 +433,10 @@ Object.keys(chains).forEach((input) => {
 				} else {
 					chains[input].transition = [
 						["overlay", [	
-							"-init_hw_device",
-							"cuda=primary:0",
-							"-filter_hw_device",
-							"primary",
+							...HW_ACCELL_INIT,
 							"-nostdin", 
 							"-progress", 
-							"pipe:1", 
-							"-ss", (chains[chains[input].overlay.imports].overlay.time.end - (duration / 2)),
+							"pipe:1",
 							"-i", 
 							("/tmp/ffmpeg.filters."+input+".mp4"), 
 							"-filter_complex", [
@@ -546,19 +553,25 @@ console.log("** CHAIN 3 **");
     const audios = Object.keys(chains)
 			.filter(key => 'audioFilters' in chains[key])
 		  .map(key => ["-i", `/tmp/${chains[key].input}`])
+
+		let audio_filters = Object.keys(chains)
+			.filter(key => 'audioFilters' in chains[key])
+		  .map(key => chains[key]['audioFilters']).join(";")
+
+		audio_filters += `;${[...Array(audio_index - 1).keys()].map(i => `[a${i + 1}]`).join('')}amix=inputs=${audio_index - 1}:duration=longest[aout]`
 		
     const audio_args = [
     	"-fflags", "+genpts",
     	"-nostdin", "-progress", "pipe:1",
-    	"-i", "/tmp/ffmpeg.concat.mp4"
-    	]
-    	
-    audio_args.push(...audios.flat())
-    audio_args.push(...[
+    	"-i", "/tmp/ffmpeg.concat.mp4",
+    	...audios.flat(),
+    	"-filter_complex", audio_filters,
+    	"-map", "0:v",
+    	"-map", "[aout]",
     	"-c:v", "libx264",
     	"/tmp/ffmpeg.audio.mp4",
     	"-y"
-    ])
+    	]
 
     let subtitle_args = [
     	"-nostdin", "-progress", "pipe:1",
