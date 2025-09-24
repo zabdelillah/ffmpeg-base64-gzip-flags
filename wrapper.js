@@ -322,7 +322,11 @@ Object.keys(chains).forEach((input) => {
 	if (!chains[input].input.includes(".mp3")) {
 		clips += 1
 		let duration = chains[input].overlay.time.duration
-		if (duration < 0) duration = 5
+		try {
+			if (duration < 0) duration = (chains[(input + 1)].overlay.time.start - chains[(input - 1)].overlay.time.end)
+		} catch (error) {
+			if (duration < 0) duration = 5
+		}
 		chains[input].filters = [
 			["preconvert", ["-framerate", "1", "-i", ("/tmp/" + chains[input].input), "-filter_complex", "tpad=stop=-1:stop_mode=clone,fps=1,format=yuv420p", "-c:v", "libx264", "-r", "1", "-t", duration, ("/tmp/ffmpeg.preconvert."+input+".mp4"), "-y"]],
 			["filters", 
@@ -383,7 +387,7 @@ Object.keys(chains).forEach((input) => {
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
-					// "-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
+					"-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
 					"-i", 
 					("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 					"-i", 
@@ -412,7 +416,7 @@ Object.keys(chains).forEach((input) => {
 							"-nostdin", 
 							"-progress", 
 							"pipe:1",
-							// "-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
+							// "-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)), // Needed for overlays when the enable= is later.
 							"-i", 
 							("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 							"-i", 
