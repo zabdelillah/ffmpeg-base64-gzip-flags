@@ -43,7 +43,7 @@ function runFfmpeg(context, index, args) {
     });
 
     ffmpeg.stderr.on('data', data => {
-      // console.log(`stderr: ${data}`);
+      console.log(`stderr: ${data}`);
     });
 
     ffmpeg.on('close', code => {
