@@ -606,6 +606,7 @@ console.log("** CHAIN 3 **");
     // await runFfmpeg("concat", 0, concat_args);
   } catch (error) {
     console.error("Promise.all rejected:", error);
+    process.exit(1);
   }
 })();
 
