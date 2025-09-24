@@ -238,12 +238,13 @@ filter_complex_matches.forEach((filter_chain) => {
 				end: gltransition_frame_ranges[1],
 				duration: gltransition_frame_ranges[1]
 			}
-			chains[(filter_gltransition[3]-1)].glprep = "[0:v]format=rgba[glprep0]"
 		} else {
 			chains[(filter_gltransition[3]-1)]["overlay"].time.duration = (
 				chains[(filter_gltransition[3])]["overlay"].time.start - chains[(filter_gltransition[3] - 1)]["overlay"].time.start
 			)
 		}
+
+		if (!Object.hasOwn(chains[(filter_gltransition[3]-1)], "glprep")) chains[(filter_gltransition[3]-1)].glprep = "[0:v]format=rgba[glprep0]"
 
 		console.log("** HERE **")
 		console.log(chains[(filter_gltransition[3]-1)]["overlay"].time)
