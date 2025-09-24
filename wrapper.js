@@ -43,7 +43,7 @@ function runFfmpeg(context, index, args) {
     });
 
     ffmpeg.stderr.on('data', data => {
-      console.log(`stderr: ${data}`);
+      // console.log(`stderr: ${data}`);
     });
 
     ffmpeg.on('close', code => {
@@ -79,7 +79,7 @@ async function runFfmpegChain(index, chainCommands, promises = null) {
 	  	console.log(`pending=${args[0]}${index}`)
 	  	await Promise.all(promises)
 	}
-	console.log(`start=${args[0]}${index}`)
+	console.log(`start=${args[0]}${index} - ${args[1]}`)
     await runFfmpeg(args[0], index, args[1]);
   }
 }
@@ -190,7 +190,10 @@ const regex_output = /\[[a-z0-9]+\]$/
 const regex_audio_trim = /\[([0-9]+)\:a\].*\[a([0-9])+\]$/
 const regex_overlay_frame_ranges = /gte\(t\,([\d\/\.]+)\)\*lte\(t\,([\d\/\.]+)/
 const regex_gltransition_frame_ranges = /offset=([\d\.]+)\:duration=([\d\.]+)/
+const regex_gltransition_offset = /offset=([\d\.]+)\:/
 const regex_subtitles = /(drawtext|drawbox=.*[\d]+)\[out]/
+
+const regex_overlay_enable = /(enable=.*\:)x/
 
 let audio_index = 1
 let subtitles_match = ""
@@ -223,7 +226,7 @@ filter_complex_matches.forEach((filter_chain) => {
 
 		chains[filter_gltransition[3]]["overlay"] = {
 			imports: filter_gltransition[1],
-			filter: filter_chain,
+			filter: filter_chain.replace(regex_gltransition_offset, ""),
 			glTransition: true,
 			time: {
 				start: gltransition_frame_ranges[1],
@@ -245,9 +248,6 @@ filter_complex_matches.forEach((filter_chain) => {
 		}
 
 		if (!Object.hasOwn(chains[(filter_gltransition[3]-1)], "glprep")) chains[(filter_gltransition[3]-1)].glprep = "[0:v]format=rgba[glprep0]"
-
-		console.log("** HERE **")
-		console.log(chains[(filter_gltransition[3]-1)]["overlay"].time)
 	}
 	if (filter_overlay != null) {
 		const overlay_frame_ranges = filter_chain.match(regex_overlay_frame_ranges)
@@ -267,7 +267,7 @@ filter_complex_matches.forEach((filter_chain) => {
 
 		chains[filter_overlay[3]]["overlay"] = {
 			imports: filter_overlay[1],
-			filter: [filter_overlay[0].replace(regex_input_double, "[0:v][1:v]").replace(regex_output, "[out]")],
+			filter: [filter_overlay[0].replace(regex_input_double, "[0:v][1:v]").replace(regex_output, "[out]").replace(regex_overlay_enable, "x")],
 			time: {
 				start: overlay_frame_ranges[1],
 				end: overlay_frame_ranges[2],
