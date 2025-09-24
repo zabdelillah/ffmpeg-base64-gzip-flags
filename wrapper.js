@@ -366,6 +366,7 @@ Object.keys(chains).forEach((input) => {
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
+					"-ss", (chains[input].overlay.time.start),
 					"-i", 
 					("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 					"-i", 
@@ -397,6 +398,7 @@ Object.keys(chains).forEach((input) => {
 							"-nostdin", 
 							"-progress", 
 							"pipe:1",
+							"-ss", (chains[input].overlay.time.start),
 							"-i", 
 							("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 							"-i", 
@@ -424,6 +426,7 @@ Object.keys(chains).forEach((input) => {
 							"-nostdin", 
 							"-progress", 
 							"pipe:1", 
+							"-ss", (chains[input].overlay.time.start),
 							"-i", 
 							("/tmp/ffmpeg.filters."+input+".mp4"), 
 							"-filter_complex", [
