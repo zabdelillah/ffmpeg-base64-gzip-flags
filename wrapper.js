@@ -385,7 +385,7 @@ Object.keys(chains).forEach((input) => {
 			if (Object.hasOwn(chains[chains[input].overlay.imports], "glprep")) {
 				let input_offset = chains[chains[input].overlay.imports].overlay.time.clipDuration
 				imported_glprep = chains[chains[input].overlay.imports].glprep.replace(regex_input, "[0:v]")
-				imported_glprep = imported_glprep.replace(regex_output, `,setpts=PTS-STARTPTS+${input_offset}/TB[glprep0]`)
+				imported_glprep = imported_glprep.replace(regex_output, `,setpts=PTS-STARTPTS-${input_offset}/TB[glprep0]`)
 			} else {
 				imported_glprep = "[0:v]format=rgba[glprep0]"
 			}
