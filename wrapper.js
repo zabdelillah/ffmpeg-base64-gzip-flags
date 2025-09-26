@@ -43,7 +43,7 @@ function runFfmpeg(context, index, args) {
     });
 
     ffmpeg.stderr.on('data', data => {
-    	data.split("\n").forEach((line) => {
+    	data.toString().split("\n").forEach((line) => {
 				console.log(`${context}${index} stderr: ${line}`);
     	})
     });
