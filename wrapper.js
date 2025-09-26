@@ -351,7 +351,7 @@ Object.keys(chains).forEach((input) => {
 				"-filter_complex", "tpad=stop=-1:stop_mode=clone,fps=1,format=yuv420p", 
 				"-c:v", "libx264", 
 				"-r", "1", 
-				"-t", Math.ceil(parseFloat(duration)), 
+				"-t", 60, 
 				("/tmp/ffmpeg.preconvert."+input+".mp4"), "-y"]],
 			["filters", 
 				[	
@@ -581,7 +581,7 @@ console.log("** CHAIN 3 **");
     	"-safe", "0",	
     	"-i", "/tmp/ffmpeg.concat.txt",
     	"-c:v", "libx264",
-    	"-vsync", "0",
+    	"-vsync", "passthrough",
     	"/tmp/ffmpeg.concat.mp4",
     	"-y"
     ]
