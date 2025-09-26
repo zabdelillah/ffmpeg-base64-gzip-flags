@@ -345,7 +345,14 @@ Object.keys(chains).forEach((input) => {
 		chains[input].overlay.time.clipWithTransitionDuration = durationWithNextTransition
 
 		chains[input].filters = [
-			["preconvert", ["-framerate", "1", "-i", ("/tmp/" + chains[input].input), "-filter_complex", "tpad=stop=-1:stop_mode=clone,fps=1,format=yuv420p", "-c:v", "libx264", "-r", "1", "-t", duration, ("/tmp/ffmpeg.preconvert."+input+".mp4"), "-y"]],
+			["preconvert", [
+				"-framerate", "1", 
+				"-i", ("/tmp/" + chains[input].input), 
+				"-filter_complex", "tpad=stop=-1:stop_mode=clone,fps=1,format=yuv420p", 
+				"-c:v", "libx264", 
+				"-r", "1", 
+				"-t", Math.ceil(parseFloat(duration)), 
+				("/tmp/ffmpeg.preconvert."+input+".mp4"), "-y"]],
 			["filters", 
 				[	
 					...HW_ACCELL_INIT,
