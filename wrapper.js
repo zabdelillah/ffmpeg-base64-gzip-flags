@@ -316,6 +316,8 @@ filter_complex_matches.forEach((filter_chain) => {
 })
 // END PARSE FLAGS
 
+console.log(chains)
+
 // STEP 1, 2: PRECONVERT & FILTERS
 Object.keys(chains).forEach((input) => {
 	let asset = downloadAsset(chains[input].input)
@@ -324,10 +326,23 @@ Object.keys(chains).forEach((input) => {
 		clips += 1
 		let duration = chains[input].overlay.time.duration
 		try {
-			if (duration < 0) duration = (chains[(input + 1)].overlay.time.start - chains[(input - 1)].overlay.time.end)
+			if (duration < 0) duration = (chains[(parseInt(input) + 1)].overlay.time.start - chains[(parseInt(input) - 1)].overlay.time.end)
 		} catch (error) {
 			if (duration < 0) duration = 5
 		}
+
+		chains[input].overlay.time.clipDuration = duration
+
+		let durationWithNextTransition = duration
+		if (Object.hasOwn(chains[(parseInt(input) + 1)], "overlay")) {
+			if (Object.hasOwn(chains[(parseInt(input) + 1)].overlay, "glTransition")) {
+				durationWithNextTransition = (duration + (chains[(parseInt(input) + 1)].overlay.time.end / 2))
+			} else {
+			}
+		}
+
+		chains[input].overlay.time.clipWithTransitionDuration = durationWithNextTransition
+
 		chains[input].filters = [
 			["preconvert", ["-framerate", "1", "-i", ("/tmp/" + chains[input].input), "-filter_complex", "tpad=stop=-1:stop_mode=clone,fps=1,format=yuv420p", "-c:v", "libx264", "-r", "1", "-t", duration, ("/tmp/ffmpeg.preconvert."+input+".mp4"), "-y"]],
 			["filters", 
@@ -368,8 +383,11 @@ Object.keys(chains).forEach((input) => {
 		if (Object.hasOwn(chains[input].overlay, "glTransition")) {
 			let imported_glprep = ""
 			if (Object.hasOwn(chains[chains[input].overlay.imports], "glprep")) {
+				let input_offset = chains[chains[input].overlay.imports].overlay.time.clipDuration
 				imported_glprep = chains[chains[input].overlay.imports].glprep.replace(regex_input, "[0:v]")
-				imported_glprep = imported_glprep.replace(regex_output, "[glprep0]")
+				imported_glprep = imported_glprep.replace(regex_output, `setpts=PTS-STARTPTS+${input_offset}/TB[glprep0]`)
+			} else {
+				imported_glprep = "[0:v]format=rgba[glprep0]"
 			}
 			let local_glprep = chains[input].glprep.replace(regex_input, "[1:v]")
 			local_glprep = local_glprep.replace(regex_output, "[glprep1]")
@@ -388,7 +406,7 @@ Object.keys(chains).forEach((input) => {
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
-					// "-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
+					"-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
 					"-i", 
 					("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 					"-i", 
