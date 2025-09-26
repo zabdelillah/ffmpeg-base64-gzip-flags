@@ -336,7 +336,7 @@ Object.keys(chains).forEach((input) => {
 		let durationWithNextTransition = duration
 		if (Object.hasOwn(chains[(parseInt(input) + 1)], "overlay")) {
 			if (Object.hasOwn(chains[(parseInt(input) + 1)].overlay, "glTransition")) {
-				durationWithNextTransition = (parseFloat(duration) + parseFloat(chains[(parseInt(input) + 1)].overlay.time.end)),toFixed(2)
+				durationWithNextTransition = parseFloat((parseFloat(duration) + parseFloat(chains[(parseInt(input) + 1)].overlay.time.end))).toFixed(2)
 			}
 		}
 
