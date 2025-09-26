@@ -43,7 +43,9 @@ function runFfmpeg(context, index, args) {
     });
 
     ffmpeg.stderr.on('data', data => {
-      console.log(`stderr: ${data}`);
+    	data.split("\n").forEach((line) => {
+				console.log(`${context}${index} stderr: ${line}`);
+    	})
     });
 
     ffmpeg.on('close', code => {
@@ -449,7 +451,7 @@ Object.keys(chains).forEach((input) => {
 							"-c:v", "libx264",
 							"-f", "mp4",
 							"-r", "60",
-							"-t", parseFloat(duration).toFloat(2),
+							"-t", parseFloat(duration).toFixed(2),
 							("/tmp/ffmpeg.overlay."+input+".mp4"),
 							"-y"
 							]
