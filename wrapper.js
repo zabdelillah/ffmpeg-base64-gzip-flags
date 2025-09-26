@@ -199,7 +199,7 @@ const regex_filters = /^\[([\d]+)\:v\].*\[ov[\d]+\]$/
 const regex_glprep = /^\[ov([\d]+)\].*\[glprep[\d]+\]$/
 const regex_gltransition = /\[[a-z]+([\d]+)\]\[gl[a-z]+([\d]+)\]gltransition\=.*\[glout([\d]+)\]/
 const regex_overlay = /\[[a-z]+([\d]+)\]\[[a-z]+([\d]+)\]overlay\=.*\[out([\d]+)\]/
-const regex_gpu_scale = /hwupload\,[\,\w\=\:\-\+\.\/]+\,hwdownload/g
+const regex_gpu_scale = /hwupload\,.*?\,hwdownload/g
 const regex_gpu_scale_dimensions = /w\=([\d]+)[x\:h\=]+([\d]+)/
 const regex_input = /^\[[a-z0-9\:]+\]/
 const regex_input_double = /^\[[a-z0-9\:]+\]\[[a-z0-9\:]+\]/
@@ -209,6 +209,7 @@ const regex_overlay_frame_ranges = /gte\(t\,([\d\/\.]+)\)\*lte\(t\,([\d\/\.]+)/
 const regex_gltransition_frame_ranges = /offset=([\d\.]+)\:duration=([\d\.]+)/
 const regex_gltransition_offset = /offset=([\d\.]+)\:/
 const regex_subtitles = /(drawtext|drawbox=.*[\d]+)\[out]/
+const regex_setpts = /\,setpts\=PTS-STARTPTS\+[\d\.]+\/TB/
 
 const regex_overlay_enable = /(enable=.*\:)x/
 
@@ -244,7 +245,7 @@ filter_complex_matches.forEach((filter_chain) => {
 		} else {
 			chains[filter_assignment[1]]["_filters"] = filter_chain
 		}
-		chains[filter_assignment[1]]["_filters"] = chains[filter_assignment[1]]["_filters"].replace(regex_input, "").replace(regex_output, "")
+		chains[filter_assignment[1]]["_filters"] = chains[filter_assignment[1]]["_filters"].replace(regex_input, "").replace(regex_output, "").replace(regex_setpts, "")
 		// END CPU Overrides
 	}
 	if (filter_glprep != null) chains[filter_glprep[1]]["glprep"] = filter_chain
@@ -554,6 +555,12 @@ console.log("** CHAIN 3 **");
     	"-y"
     ]
 
+    let ffmpegSequence = [
+    	["concat", concat_args],
+    ]
+
+    let prevFile = "/tmp/ffmpeg.concat.mp4"
+
     const audios = Object.keys(chains)
 			.filter(key => 'audioFilters' in chains[key])
 		  .map(key => ["-i", `/tmp/${chains[key].input}`])
@@ -562,36 +569,43 @@ console.log("** CHAIN 3 **");
 			.filter(key => 'audioFilters' in chains[key])
 		  .map(key => chains[key]['audioFilters']).join(";")
 
-		audio_filters += `;${[...Array(audio_index - 1).keys()].map(i => `[a${i + 1}]`).join('')}amix=inputs=${audio_index - 1}:duration=longest[aout]`
-		
-    const audio_args = [
-    	"-fflags", "+genpts",
-    	"-nostdin", "-progress", "pipe:1",
-    	"-i", "/tmp/ffmpeg.concat.mp4",
-    	...audios.flat(),
-    	"-filter_complex", audio_filters,
-    	"-map", "0:v",
-    	"-map", "[aout]",
-    	"-c:v", "libx264",
-    	"/tmp/ffmpeg.audio.mp4",
-    	"-y"
-    	]
+		if (audios.length > 0) {
+			audio_filters += `;${[...Array(audio_index - 1).keys()].map(i => `[a${i + 1}]`).join('')}amix=inputs=${audio_index - 1}:duration=longest[aout]`
+			
+	    const audio_args = [
+	    	"-fflags", "+genpts",
+	    	"-nostdin", "-progress", "pipe:1",
+	    	"-i", "/tmp/ffmpeg.concat.mp4",
+	    	...audios.flat(),
+	    	"-filter_complex", audio_filters,
+	    	"-map", "0:v",
+	    	"-map", "[aout]",
+	    	"-c:v", "libx264",
+	    	"/tmp/ffmpeg.audio.mp4",
+	    	"-y"
+	    	]
+
+	    ffmpegSequence.push(["audio",  audio_args])
+	    prevFile = "/tmp/ffmpeg.audio.mp4"
+		}
 
     let subtitle_args = [
     	"-nostdin", "-progress", "pipe:1",
-    	"-i", "/tmp/ffmpeg.audio.mp4",
+    	"-i", prevFile,
     	"-c:v", "libx264",
     	"/tmp/ffmpeg.final.mp4",
     ]
     if (subtitles_match != "") {
     	subtitle_args = [
 	    	"-nostdin", "-progress", "pipe:1",
-	    	"-i", "/tmp/ffmpeg.audio.mp4",
+	    	"-i", prevFile,
 	    	"-filter_complex_script", "/tmp/ffmpeg.subtitles.txt",
 	    	"-c:v", "libx264",
 	    	"/tmp/ffmpeg.final.mp4", "-y"
 	    ]
     }
+
+    ffmpegSequence.push(["subtitles", subtitle_args])
 
     // const subtitle_args = 
 
@@ -625,11 +639,7 @@ console.log("** CHAIN 3 **");
 			})
 		}
 
-		await runFfmpegChain("0", [
-			["concat", concat_args],
-			["audio",  audio_args],
-			["subtitles", subtitle_args]
-		], transitionPromises)
+		await runFfmpegChain("0", ffmpegSequence, transitionPromises)
 
 		await spawn('curl', ["-T", "/tmp/ffmpeg.final.mp4", uploadUrl]);
 		console.log("complete=upload")
