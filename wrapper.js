@@ -336,8 +336,7 @@ Object.keys(chains).forEach((input) => {
 		let durationWithNextTransition = duration
 		if (Object.hasOwn(chains[(parseInt(input) + 1)], "overlay")) {
 			if (Object.hasOwn(chains[(parseInt(input) + 1)].overlay, "glTransition")) {
-				durationWithNextTransition = (duration + (chains[(parseInt(input) + 1)].overlay.time.end / 2))
-			} else {
+				durationWithNextTransition = (duration + (chains[(parseInt(input) + 1)].overlay.time.end))
 			}
 		}
 
@@ -385,7 +384,7 @@ Object.keys(chains).forEach((input) => {
 			if (Object.hasOwn(chains[chains[input].overlay.imports], "glprep")) {
 				let input_offset = chains[chains[input].overlay.imports].overlay.time.clipDuration
 				imported_glprep = chains[chains[input].overlay.imports].glprep.replace(regex_input, "[0:v]")
-				imported_glprep = imported_glprep.replace(regex_output, `,setpts=PTS-STARTPTS-${input_offset}/TB,tpad=stop=-1:stop_mode=clone[glprep0]`)
+				imported_glprep = imported_glprep.replace(regex_output, `,setpts=PTS-STARTPTS-${input_offset}/TB[glprep0]`)
 			} else {
 				imported_glprep = "[0:v]format=rgba[glprep0]"
 			}
