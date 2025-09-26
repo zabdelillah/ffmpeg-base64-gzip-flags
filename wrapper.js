@@ -574,6 +574,7 @@ console.log("** CHAIN 3 **");
     	"-safe", "0",	
     	"-i", "/tmp/ffmpeg.concat.txt",
     	"-c:v", "libx264",
+    	"-vsync", "0",
     	"/tmp/ffmpeg.concat.mp4",
     	"-y"
     ]
