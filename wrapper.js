@@ -388,7 +388,7 @@ Object.keys(chains).forEach((input) => {
 					"-nostdin", 
 					"-progress", 
 					"pipe:1",
-					"-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
+					// "-ss", (chains[chains[input].overlay.imports].overlay.time.duration - (duration / 2)),
 					"-i", 
 					("/tmp/ffmpeg.filters."+chains[input].overlay.imports+".mp4"), 
 					"-i", 
