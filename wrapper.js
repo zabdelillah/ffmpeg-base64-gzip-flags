@@ -360,7 +360,7 @@ Object.keys(chains).forEach((input) => {
 					"-c:v", "libx264",
 					"-f", "mp4",
 					"-r", "60",
-					"-t", durationWithNextTransition,
+					"-t", parseFloat(durationWithNextTransition).toFixed(2),
 					("/tmp/ffmpeg.filters."+input+".mp4"),
 					"-y"]
 				]
@@ -403,6 +403,7 @@ Object.keys(chains).forEach((input) => {
 
 			chains[input].transition = [
 				["overlay", [	
+					"-fflags", "+genpts",
 					...HW_ACCELL_INIT,
 					"-nostdin", 
 					"-progress", 
@@ -421,7 +422,7 @@ Object.keys(chains).forEach((input) => {
 					"-c:v", "libx264",
 					"-f", "mp4",
 					"-r", "60",
-					"-t", duration,
+					"-t", parseFloat(duration).toFixed(2),
 					("/tmp/ffmpeg.overlay."+input+".mp4"),
 					"-y"
 					]
@@ -448,7 +449,7 @@ Object.keys(chains).forEach((input) => {
 							"-c:v", "libx264",
 							"-f", "mp4",
 							"-r", "60",
-							"-t", duration,
+							"-t", parseFloat(duration).toFloat(2),
 							("/tmp/ffmpeg.overlay."+input+".mp4"),
 							"-y"
 							]
@@ -470,7 +471,7 @@ Object.keys(chains).forEach((input) => {
 							"-c:v", "libx264",
 							"-f", "mp4",
 							"-r", "60",
-							"-t", duration,
+							"-t", parseFloat(duration).toFixed(2),
 							("/tmp/ffmpeg.overlay."+input+".mp4"),
 							"-y"
 							]
@@ -565,6 +566,7 @@ console.log("** CHAIN 3 **");
     // const inputs_concat = 
 
 		const concat_args = [
+			"-fflags", "+genpts",
     	"-nostdin", "-progress", "pipe:1",
     	"-f", "concat",
     	"-safe", "0",	
